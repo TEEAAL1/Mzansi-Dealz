@@ -15,6 +15,8 @@ tags:
     description: Category operations
   - name: cart
     description: Cart operations
+  - name: checkout
+    description: Checkout and order operations
 paths:
   /healthz:
     get:
@@ -157,6 +159,57 @@ paths:
                 items:
                   $ref: "#/components/schemas/Category"
 
+  /checkout:
+    post:
+      operationId: createCheckout
+      tags: [checkout]
+      summary: Create an order and get PayFast payment data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Order created with PayFast redirect data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: Validation error
+
+  /checkout/notify:
+    post:
+      operationId: handlePayfastNotify
+      tags: [checkout]
+      summary: PayFast ITN webhook
+      responses:
+        "200":
+          description: OK
+
+  /orders/{orderNumber}:
+    get:
+      operationId: getOrder
+      tags: [checkout]
+      summary: Get order by order number
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -271,3 +324,144 @@ components:
           type: integer
         newArrivalsCount:
           type: integer
+
+    CheckoutItem:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: integer
+        quantity:
+          type: integer
+
+    CheckoutRequest:
+      type: object
+      required:
+        - items
+        - customerName
+        - customerEmail
+        - customerPhone
+        - deliveryAddress
+        - deliveryCity
+        - deliveryProvince
+        - deliveryPostalCode
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckoutItem"
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        deliveryAddress:
+          type: string
+        deliveryCity:
+          type: string
+        deliveryProvince:
+          type: string
+        deliveryPostalCode:
+          type: string
+
+    CheckoutResponse:
+      type: object
+      required:
+        - orderNumber
+        - total
+        - payfastUrl
+        - payfastData
+      properties:
+        orderNumber:
+          type: string
+        total:
+          type: number
+        payfastUrl:
+          type: string
+        payfastData:
+          type: object
+          additionalProperties:
+            type: string
+
+    OrderItem:
+      type: object
+      required:
+        - id
+        - productId
+        - productName
+        - productImageUrl
+        - price
+        - quantity
+        - subtotal
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        productImageUrl:
+          type: string
+        price:
+          type: number
+        quantity:
+          type: integer
+        subtotal:
+          type: number
+
+    OrderDetail:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - customerName
+        - customerEmail
+        - customerPhone
+        - deliveryAddress
+        - deliveryCity
+        - deliveryProvince
+        - deliveryPostalCode
+        - subtotal
+        - deliveryFee
+        - total
+        - status
+        - items
+        - createdAt
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        deliveryAddress:
+          type: string
+        deliveryCity:
+          type: string
+        deliveryProvince:
+          type: string
+        deliveryPostalCode:
+          type: string
+        subtotal:
+          type: number
+        deliveryFee:
+          type: number
+        total:
+          type: number
+        status:
+          type: string
+        payfastPaymentId:
+          type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        createdAt:
+          type: string

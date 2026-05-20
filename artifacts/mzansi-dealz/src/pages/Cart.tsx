@@ -131,8 +131,8 @@ export default function Cart() {
               <p className="text-xs text-muted-foreground mt-1 text-right">Includes VAT</p>
             </div>
             
-            <Button size="lg" className="w-full h-14 text-lg font-bold tracking-wide shadow-md">
-              SECURE CHECKOUT
+            <Button asChild size="lg" className="w-full h-14 text-lg font-bold tracking-wide shadow-md">
+              <Link href="/checkout">SECURE CHECKOUT</Link>
             </Button>
             
             <div className="mt-6 space-y-3 border-t border-border pt-6">

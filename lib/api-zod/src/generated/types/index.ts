@@ -7,11 +7,17 @@
  */
 
 export * from './category';
+export * from './checkoutItem';
+export * from './checkoutRequest';
+export * from './checkoutResponse';
+export * from './checkoutResponsePayfastData';
 export * from './getFeaturedProductsParams';
 export * from './getNewArrivalsParams';
 export * from './healthStatus';
 export * from './listProductsParams';
 export * from './listProductsSort';
+export * from './orderDetail';
+export * from './orderItem';
 export * from './product';
 export * from './productList';
 export * from './productStats';

@@ -160,3 +160,63 @@ export const ListCategoriesResponseItem = zod.object({
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
+/**
+ * @summary Create an order and get PayFast payment data
+ */
+export const CreateCheckoutBody = zod.object({
+  "items": zod.array(zod.object({
+  "productId": zod.number(),
+  "quantity": zod.number()
+})),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "deliveryAddress": zod.string(),
+  "deliveryCity": zod.string(),
+  "deliveryProvince": zod.string(),
+  "deliveryPostalCode": zod.string()
+})
+
+export const CreateCheckoutResponse = zod.object({
+  "orderNumber": zod.string(),
+  "total": zod.number(),
+  "payfastUrl": zod.string(),
+  "payfastData": zod.record(zod.string(), zod.string())
+})
+
+
+/**
+ * @summary Get order by order number
+ */
+export const GetOrderParams = zod.object({
+  "orderNumber": zod.coerce.string()
+})
+
+export const GetOrderResponse = zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "customerPhone": zod.string(),
+  "deliveryAddress": zod.string(),
+  "deliveryCity": zod.string(),
+  "deliveryProvince": zod.string(),
+  "deliveryPostalCode": zod.string(),
+  "subtotal": zod.number(),
+  "deliveryFee": zod.number(),
+  "total": zod.number(),
+  "status": zod.string(),
+  "payfastPaymentId": zod.string().nullish(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "productId": zod.number(),
+  "productName": zod.string(),
+  "productImageUrl": zod.string(),
+  "price": zod.number(),
+  "quantity": zod.number(),
+  "subtotal": zod.number()
+})),
+  "createdAt": zod.string()
+})
+
+

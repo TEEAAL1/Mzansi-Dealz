@@ -9,6 +9,8 @@ import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
 import ProductDetail from "@/pages/ProductDetail";
 import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import OrderConfirmation from "@/pages/OrderConfirmation";
 import About from "@/pages/About";
 import NotFound from "@/pages/not-found";
 
@@ -34,6 +36,10 @@ function Router() {
           {(params) => <ProductDetail params={{ id: params.id }} />}
         </Route>
         <Route path="/cart" component={Cart} />
+        <Route path="/checkout" component={Checkout} />
+        <Route path="/order-confirmation/:orderNumber">
+          {(params) => <OrderConfirmation params={{ orderNumber: params.orderNumber }} />}
+        </Route>
         <Route path="/about" component={About} />
         <Route component={NotFound} />
       </Switch>

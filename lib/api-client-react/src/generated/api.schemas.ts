@@ -54,6 +54,61 @@ export interface ProductStats {
   newArrivalsCount: number;
 }
 
+export interface CheckoutItem {
+  productId: number;
+  quantity: number;
+}
+
+export interface CheckoutRequest {
+  items: CheckoutItem[];
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryProvince: string;
+  deliveryPostalCode: string;
+}
+
+export type CheckoutResponsePayfastData = {[key: string]: string};
+
+export interface CheckoutResponse {
+  orderNumber: string;
+  total: number;
+  payfastUrl: string;
+  payfastData: CheckoutResponsePayfastData;
+}
+
+export interface OrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  productImageUrl: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface OrderDetail {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  deliveryAddress: string;
+  deliveryCity: string;
+  deliveryProvince: string;
+  deliveryPostalCode: string;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  status: string;
+  /** @nullable */
+  payfastPaymentId?: string | null;
+  items: OrderItem[];
+  createdAt: string;
+}
+
 export type ListProductsParams = {
 category?: string;
 search?: string;
