@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: MzansiDealz API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: products
+    description: Product operations
+  - name: categories
+    description: Category operations
+  - name: cart
+    description: Cart operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +28,135 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List products with optional filters
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: on_sale
+          in: query
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, discount_desc]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductList"
+
+  /products/featured:
+    get:
+      operationId: getFeaturedProducts
+      tags: [products]
+      summary: Get featured/flash sale products
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Featured products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/new-arrivals:
+    get:
+      operationId: getNewArrivals
+      tags: [products]
+      summary: Get newest products
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: New arrivals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+
+  /products/stats:
+    get:
+      operationId: getProductStats
+      tags: [products]
+      summary: Get product statistics summary
+      responses:
+        "200":
+          description: Product stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductStats"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +167,107 @@ components:
       required:
         - status
 
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - price
+        - originalPrice
+        - discountPercent
+        - categoryId
+        - categoryName
+        - imageUrl
+        - inStock
+        - isFeatured
+        - isNewArrival
+        - createdAt
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+        price:
+          type: number
+        originalPrice:
+          type: number
+        discountPercent:
+          type: integer
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        imageUrl:
+          type: string
+        inStock:
+          type: boolean
+        stockCount:
+          type: ["integer", "null"]
+        isFeatured:
+          type: boolean
+        isNewArrival:
+          type: boolean
+        tags:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ProductList:
+      type: object
+      required:
+        - products
+        - total
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        total:
+          type: integer
+
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - icon
+        - productCount
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        productCount:
+          type: integer
+        description:
+          type: ["string", "null"]
+
+    ProductStats:
+      type: object
+      required:
+        - totalProducts
+        - totalCategories
+        - avgDiscountPercent
+        - featuredCount
+        - newArrivalsCount
+      properties:
+        totalProducts:
+          type: integer
+        totalCategories:
+          type: integer
+        avgDiscountPercent:
+          type: integer
+        featuredCount:
+          type: integer
+        newArrivalsCount:
+          type: integer

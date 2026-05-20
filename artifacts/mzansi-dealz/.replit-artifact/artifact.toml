@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "MzansiDealz"
+version = "1.0.0"
+id = "artifacts/mzansi-dealz"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23357
+
+[services.development]
+run = "pnpm --filter @workspace/mzansi-dealz run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mzansi-dealz", "run", "build" ]
+publicDir = "artifacts/mzansi-dealz/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23357"
+BASE_PATH = "/"
