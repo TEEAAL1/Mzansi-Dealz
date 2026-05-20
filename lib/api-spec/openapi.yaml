@@ -17,6 +17,8 @@ tags:
     description: Cart operations
   - name: checkout
     description: Checkout and order operations
+  - name: admin
+    description: Admin panel operations
 paths:
   /healthz:
     get:
@@ -158,6 +160,162 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Category"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Unauthorized
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+        "401":
+          description: Unauthorized
+
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin]
+      summary: List all orders
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrderList"
+        "401":
+          description: Unauthorized
+
+  /admin/orders/{orderNumber}/status:
+    put:
+      operationId: updateOrderStatus
+      tags: [admin]
+      summary: Update order status
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+      responses:
+        "200":
+          description: Updated
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+
+  /admin/products:
+    post:
+      operationId: createProduct
+      tags: [admin]
+      summary: Create a new product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          description: Unauthorized
+
+  /admin/products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [admin]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
+    delete:
+      operationId: deleteProduct
+      tags: [admin]
+      summary: Delete a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "401":
+          description: Unauthorized
 
   /checkout:
     post:
@@ -324,6 +482,122 @@ components:
           type: integer
         newArrivalsCount:
           type: integer
+
+    AdminLoginRequest:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+
+    AdminLoginResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+
+    AdminStats:
+      type: object
+      required:
+        - totalOrders
+        - ordersToday
+        - totalRevenue
+        - revenueToday
+        - totalProducts
+        - pendingOrders
+      properties:
+        totalOrders:
+          type: integer
+        ordersToday:
+          type: integer
+        totalRevenue:
+          type: number
+        revenueToday:
+          type: number
+        totalProducts:
+          type: integer
+        pendingOrders:
+          type: integer
+
+    AdminOrder:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - customerName
+        - customerEmail
+        - total
+        - status
+        - itemCount
+        - createdAt
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        total:
+          type: number
+        status:
+          type: string
+        itemCount:
+          type: integer
+        createdAt:
+          type: string
+
+    AdminOrderList:
+      type: object
+      required: [orders, total]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrder"
+        total:
+          type: integer
+
+    UpdateOrderStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    CreateProductRequest:
+      type: object
+      required:
+        - name
+        - price
+        - originalPrice
+        - categoryId
+        - imageUrl
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        originalPrice:
+          type: number
+        categoryId:
+          type: integer
+        imageUrl:
+          type: string
+        inStock:
+          type: boolean
+        stockCount:
+          type: integer
+        isFeatured:
+          type: boolean
+        isNewArrival:
+          type: boolean
+        tags:
+          type: string
 
     CheckoutItem:
       type: object

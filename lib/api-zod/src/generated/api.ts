@@ -161,6 +161,134 @@ export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem)
 
 
 /**
+ * @summary Admin login
+ */
+export const AdminLoginBody = zod.object({
+  "password": zod.string()
+})
+
+export const AdminLoginResponse = zod.object({
+  "token": zod.string()
+})
+
+
+/**
+ * @summary Dashboard stats
+ */
+export const GetAdminStatsResponse = zod.object({
+  "totalOrders": zod.number(),
+  "ordersToday": zod.number(),
+  "totalRevenue": zod.number(),
+  "revenueToday": zod.number(),
+  "totalProducts": zod.number(),
+  "pendingOrders": zod.number()
+})
+
+
+/**
+ * @summary List all orders
+ */
+export const ListAdminOrdersQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "limit": zod.coerce.number().optional(),
+  "offset": zod.coerce.number().optional()
+})
+
+export const ListAdminOrdersResponse = zod.object({
+  "orders": zod.array(zod.object({
+  "id": zod.number(),
+  "orderNumber": zod.string(),
+  "customerName": zod.string(),
+  "customerEmail": zod.string(),
+  "total": zod.number(),
+  "status": zod.string(),
+  "itemCount": zod.number(),
+  "createdAt": zod.string()
+})),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Update order status
+ */
+export const UpdateOrderStatusParams = zod.object({
+  "orderNumber": zod.coerce.string()
+})
+
+export const UpdateOrderStatusBody = zod.object({
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Create a new product
+ */
+export const CreateProductBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string().optional(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "categoryId": zod.number(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean().optional(),
+  "stockCount": zod.number().optional(),
+  "isFeatured": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "tags": zod.string().optional()
+})
+
+
+/**
+ * @summary Update a product
+ */
+export const UpdateProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProductBody = zod.object({
+  "name": zod.string(),
+  "description": zod.string().optional(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "categoryId": zod.number(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean().optional(),
+  "stockCount": zod.number().optional(),
+  "isFeatured": zod.boolean().optional(),
+  "isNewArrival": zod.boolean().optional(),
+  "tags": zod.string().optional()
+})
+
+export const UpdateProductResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a product
+ */
+export const DeleteProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Create an order and get PayFast payment data
  */
 export const CreateCheckoutBody = zod.object({

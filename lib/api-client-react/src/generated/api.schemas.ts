@@ -54,6 +54,57 @@ export interface ProductStats {
   newArrivalsCount: number;
 }
 
+export interface AdminLoginRequest {
+  password: string;
+}
+
+export interface AdminLoginResponse {
+  token: string;
+}
+
+export interface AdminStats {
+  totalOrders: number;
+  ordersToday: number;
+  totalRevenue: number;
+  revenueToday: number;
+  totalProducts: number;
+  pendingOrders: number;
+}
+
+export interface AdminOrder {
+  id: number;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  total: number;
+  status: string;
+  itemCount: number;
+  createdAt: string;
+}
+
+export interface AdminOrderList {
+  orders: AdminOrder[];
+  total: number;
+}
+
+export interface UpdateOrderStatusRequest {
+  status: string;
+}
+
+export interface CreateProductRequest {
+  name: string;
+  description?: string;
+  price: number;
+  originalPrice: number;
+  categoryId: number;
+  imageUrl: string;
+  inStock?: boolean;
+  stockCount?: number;
+  isFeatured?: boolean;
+  isNewArrival?: boolean;
+  tags?: string;
+}
+
 export interface CheckoutItem {
   productId: number;
   quantity: number;
@@ -134,5 +185,11 @@ limit?: number;
 
 export type GetNewArrivalsParams = {
 limit?: number;
+};
+
+export type ListAdminOrdersParams = {
+status?: string;
+limit?: number;
+offset?: number;
 };
 

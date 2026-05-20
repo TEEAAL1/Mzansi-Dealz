@@ -1,9 +1,11 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/hooks/use-cart";
 import { Layout } from "@/components/Layout";
+import { AdminLayout } from "@/components/AdminLayout";
+import { useAdminToken } from "@/hooks/use-admin";
 
 import Home from "@/pages/Home";
 import Shop from "@/pages/Shop";
@@ -14,6 +16,12 @@ import OrderConfirmation from "@/pages/OrderConfirmation";
 import About from "@/pages/About";
 import NotFound from "@/pages/not-found";
 
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminProductForm from "@/pages/admin/AdminProductForm";
+import AdminOrders from "@/pages/admin/AdminOrders";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -23,27 +31,81 @@ const queryClient = new QueryClient({
   },
 });
 
-function Router() {
-  return (
-    <Layout>
+function AdminRoutes() {
+  const { token } = useAdminToken();
+  const [, navigate] = useLocation();
+
+  if (!token) {
+    return (
       <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/shop" component={Shop} />
-        <Route path="/shop/:category">
-          {(params) => <Shop params={{ category: params.category }} />}
+        <Route path="/login" component={AdminLogin} />
+        <Route>
+          {() => {
+            navigate("/login");
+            return null;
+          }}
         </Route>
-        <Route path="/product/:id">
-          {(params) => <ProductDetail params={{ id: params.id }} />}
+      </Switch>
+    );
+  }
+
+  return (
+    <AdminLayout>
+      <Switch>
+        <Route path="/" component={AdminDashboard} />
+        <Route path="/products" component={AdminProducts} />
+        <Route path="/products/new">
+          {() => <AdminProductForm params={{ id: "new" }} />}
         </Route>
-        <Route path="/cart" component={Cart} />
-        <Route path="/checkout" component={Checkout} />
-        <Route path="/order-confirmation/:orderNumber">
-          {(params) => <OrderConfirmation params={{ orderNumber: params.orderNumber }} />}
+        <Route path="/products/:id/edit">
+          {(params) => <AdminProductForm params={{ id: params.id }} />}
         </Route>
-        <Route path="/about" component={About} />
+        <Route path="/orders" component={AdminOrders} />
         <Route component={NotFound} />
       </Switch>
-    </Layout>
+    </AdminLayout>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      <Route path="/admin/:rest*">
+        {() => (
+          <WouterRouter base="/admin">
+            <AdminRoutes />
+          </WouterRouter>
+        )}
+      </Route>
+      <Route path="/admin">
+        {() => (
+          <WouterRouter base="/admin">
+            <AdminRoutes />
+          </WouterRouter>
+        )}
+      </Route>
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/shop" component={Shop} />
+            <Route path="/shop/:category">
+              {(params) => <Shop params={{ category: params.category }} />}
+            </Route>
+            <Route path="/product/:id">
+              {(params) => <ProductDetail params={{ id: params.id }} />}
+            </Route>
+            <Route path="/cart" component={Cart} />
+            <Route path="/checkout" component={Checkout} />
+            <Route path="/order-confirmation/:orderNumber">
+              {(params) => <OrderConfirmation params={{ orderNumber: params.orderNumber }} />}
+            </Route>
+            <Route path="/about" component={About} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 

@@ -8,3 +8,5 @@ export function cn(...inputs: ClassValue[]) {
 export function formatZAR(amount: number): string {
   return "R " + amount.toLocaleString("en-ZA", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
+
+export const formatPrice = formatZAR;
