@@ -39,8 +39,8 @@ export function Footer() {
               South Africa's best deals online. Affordable electronics, home essentials, beauty products, fashion and more — delivered to your door.
             </p>
             <div className="flex flex-col gap-1 text-sm text-gray-300">
-              <a href="mailto:support@mzansidealz.co.za" className="hover:text-primary transition-colors">support@mzansidealz.co.za</a>
-              <a href="https://wa.me/27601234567" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">WhatsApp: 060 123 4567</a>
+              <a href="mailto:sales@mzansidealz.com" className="hover:text-primary transition-colors">sales@mzansidealz.com</a>
+              <a href="https://wa.me/27677664764" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">WhatsApp: +27 67 766 4764</a>
             </div>
           </div>
 

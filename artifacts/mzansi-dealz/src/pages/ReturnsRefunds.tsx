@@ -70,7 +70,7 @@ export default function ReturnsRefunds() {
             <h2 className="text-xl font-bold mb-4">How to Return an Item</h2>
             <div className="space-y-4">
               {[
-                { step: "1", title: "Contact Us", body: "Email us at support@mzansidealz.co.za or WhatsApp 060 123 4567 within 7 days of delivery. Include your order number and reason for return." },
+                { step: "1", title: "Contact Us", body: "Email us at sales@mzansidealz.com or WhatsApp +27 67 766 4764 within 7 days of delivery. Include your order number and reason for return." },
                 { step: "2", title: "Get Approval", body: "We'll review your request and send you a Return Merchandise Authorisation (RMA) number and return instructions within 24 hours on business days." },
                 { step: "3", title: "Package and Send", body: "Pack the item securely in its original packaging. Write the RMA number on the outside of the package. You are responsible for return shipping costs unless the item is defective or incorrect." },
                 { step: "4", title: "Receive Your Refund", body: "Once we receive and inspect the returned item, we'll process your refund within 3–5 business days. Refunds are issued to the original payment method." },

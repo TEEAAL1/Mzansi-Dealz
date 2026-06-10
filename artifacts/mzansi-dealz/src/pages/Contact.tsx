@@ -47,7 +47,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-bold text-sm">Email</p>
-                  <a href="mailto:support@mzansidealz.co.za" className="text-primary hover:underline text-sm">support@mzansidealz.co.za</a>
+                  <a href="mailto:sales@mzansidealz.com" className="text-primary hover:underline text-sm">sales@mzansidealz.com</a>
                   <p className="text-xs text-muted-foreground mt-0.5">We reply within 24 hours on business days</p>
                 </div>
               </div>
@@ -58,8 +58,8 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-bold text-sm">WhatsApp</p>
-                  <a href="https://wa.me/27601234567?text=Hi%20MzansiDealz!%20I%20need%20help%20with%20my%20order." target="_blank" rel="noopener noreferrer" className="text-[#25D366] hover:underline font-medium text-sm">
-                    060 123 4567
+                  <a href="https://wa.me/27677664764?text=Hi%20MzansiDealz!%20I%20need%20help%20with%20my%20order." target="_blank" rel="noopener noreferrer" className="text-[#25D366] hover:underline font-medium text-sm">
+                    +27 67 766 4764
                   </a>
                   <p className="text-xs text-muted-foreground mt-0.5">Messages only — fastest response</p>
                 </div>
@@ -192,7 +192,7 @@ export default function Contact() {
                   </Button>
 
                   <p className="text-xs text-muted-foreground text-center">
-                    For urgent queries, WhatsApp us at <a href="https://wa.me/27601234567" target="_blank" rel="noopener noreferrer" className="text-[#25D366] font-bold">060 123 4567</a> for the fastest response.
+                    For urgent queries, WhatsApp us at <a href="https://wa.me/27677664764" target="_blank" rel="noopener noreferrer" className="text-[#25D366] font-bold">+27 67 766 4764</a> for the fastest response.
                   </p>
                 </form>
               </>

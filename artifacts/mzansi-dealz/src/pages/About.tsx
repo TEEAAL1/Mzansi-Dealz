@@ -86,11 +86,11 @@ export default function About() {
           <div className="grid sm:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="font-semibold text-foreground">Email Support</p>
-              <a href="mailto:support@mzansidealz.co.za" className="text-primary hover:underline">support@mzansidealz.co.za</a>
+              <a href="mailto:sales@mzansidealz.com" className="text-primary hover:underline">sales@mzansidealz.com</a>
             </div>
             <div>
               <p className="font-semibold text-foreground">WhatsApp</p>
-              <a href="https://wa.me/27601234567" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">060 123 4567</a>
+              <a href="https://wa.me/27677664764" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">+27 67 766 4764</a>
               <p className="text-muted-foreground text-xs mt-0.5">Messages only</p>
             </div>
             <div>

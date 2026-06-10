@@ -82,7 +82,7 @@ export default function PrivacyPolicy() {
             <h2 className="text-xl font-bold mb-3">8. Contact Us</h2>
             <p className="text-muted-foreground leading-relaxed">
               For any privacy-related queries or to exercise your rights, please contact us at:{" "}
-              <a href="mailto:support@mzansidealz.co.za" className="text-primary hover:underline">support@mzansidealz.co.za</a>
+              <a href="mailto:sales@mzansidealz.com" className="text-primary hover:underline">sales@mzansidealz.com</a>
             </p>
           </section>
         </div>

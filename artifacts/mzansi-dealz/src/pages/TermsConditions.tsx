@@ -80,7 +80,7 @@ export default function TermsConditions() {
             <h2 className="text-xl font-bold mb-3">9. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
               For any questions regarding these terms, contact us at{" "}
-              <a href="mailto:support@mzansidealz.co.za" className="text-primary hover:underline">support@mzansidealz.co.za</a>.
+              <a href="mailto:sales@mzansidealz.com" className="text-primary hover:underline">sales@mzansidealz.com</a>.
             </p>
           </section>
         </div>

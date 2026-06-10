@@ -1,5 +1,5 @@
 export function WhatsAppButton() {
-  const phoneNumber = "27601234567";
+  const phoneNumber = "27677664764";
   const message = encodeURIComponent("Hi MzansiDealz! I'd like to place an order or ask about a product.");
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
