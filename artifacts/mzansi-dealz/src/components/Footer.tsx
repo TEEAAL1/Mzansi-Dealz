@@ -9,9 +9,9 @@ export function Footer() {
     <footer className="bg-secondary text-white pt-12 pb-6 mt-12 border-t-4 border-primary">
       <div className="container mx-auto px-4">
         {/* Stats Strip */}
-        <div className="bg-white/5 rounded-xl p-6 mb-12 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
+        <div className="bg-white/5 rounded-xl p-5 mb-10 flex flex-col md:flex-row items-center justify-between gap-4 border border-white/10">
           <div className="flex-1 text-center md:text-left">
-            <h4 className="text-xl font-bold mb-1">Mzansi's Fastest Growing Marketplace</h4>
+            <h4 className="text-lg font-bold mb-1">South Africa's Favourite Deals Store</h4>
             <p className="text-sm text-gray-400">Join thousands of South Africans saving big every day.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-8">
@@ -30,52 +30,64 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <h3 className="text-xl font-black italic tracking-tight mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+          <div className="col-span-2 md:col-span-1">
+            <h3 className="text-xl font-black italic tracking-tight mb-3">
               Mzansi<span className="text-primary">Dealz</span>
             </h3>
-            <p className="text-sm text-gray-300 mb-4">
-              South Africa's favorite spot for massive discounts. Shop smart, save big.
+            <p className="text-sm text-gray-300 mb-4 leading-relaxed">
+              South Africa's best deals online. Affordable electronics, home essentials, beauty products, fashion and more — delivered to your door.
             </p>
+            <div className="flex flex-col gap-1 text-sm text-gray-300">
+              <a href="mailto:support@mzansidealz.co.za" className="hover:text-primary transition-colors">support@mzansidealz.co.za</a>
+              <a href="https://wa.me/27601234567" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">WhatsApp: 060 123 4567</a>
+            </div>
           </div>
-          
+
           <div>
-            <h4 className="font-bold text-lg mb-4">Customer Care</h4>
+            <h4 className="font-bold text-base mb-3">Customer Care</h4>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li><Link href="/about" className="hover:text-primary transition-colors">Help Centre</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors">Track Your Order</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors">Returns & Refunds</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors">Delivery Information</Link></li>
+              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link href="/returns-refunds" className="hover:text-primary transition-colors">Returns &amp; Refunds</Link></li>
+              <li><Link href="/shipping-delivery" className="hover:text-primary transition-colors">Shipping &amp; Delivery</Link></li>
             </ul>
           </div>
-          
+
           <div>
-            <h4 className="font-bold text-lg mb-4">Shop By Category</h4>
+            <h4 className="font-bold text-base mb-3">Shop By Category</h4>
             <ul className="space-y-2 text-sm text-gray-300">
-              <li><Link href="/shop/electronics" className="hover:text-primary transition-colors">Electronics Deals</Link></li>
-              <li><Link href="/shop/home-living" className="hover:text-primary transition-colors">Home & Living</Link></li>
-              <li><Link href="/shop/health-beauty" className="hover:text-primary transition-colors">Health & Beauty</Link></li>
+              <li><Link href="/shop/electronics" className="hover:text-primary transition-colors">Electronics</Link></li>
+              <li><Link href="/shop/home-living" className="hover:text-primary transition-colors">Home &amp; Living</Link></li>
+              <li><Link href="/shop/health-beauty" className="hover:text-primary transition-colors">Beauty &amp; Health</Link></li>
+              <li><Link href="/shop/fashion" className="hover:text-primary transition-colors">Fashion</Link></li>
+              <li><Link href="/shop/wellness" className="hover:text-primary transition-colors">Wellness</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">View All Deals</Link></li>
             </ul>
           </div>
-          
+
           <div>
-            <h4 className="font-bold text-lg mb-4">Payment Methods</h4>
-            <div className="flex gap-2 flex-wrap text-sm text-gray-300">
-              <span className="bg-white/10 px-3 py-1 rounded">EFT Secure</span>
-              <span className="bg-white/10 px-3 py-1 rounded">Capitec Pay</span>
-              <span className="bg-white/10 px-3 py-1 rounded">Visa / Mastercard</span>
-            </div>
+            <h4 className="font-bold text-base mb-3">Legal</h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li><Link href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/terms-conditions" className="hover:text-primary transition-colors">Terms &amp; Conditions</Link></li>
+              <li><Link href="/returns-refunds" className="hover:text-primary transition-colors">Returns Policy</Link></li>
+              <li><Link href="/shipping-delivery" className="hover:text-primary transition-colors">Shipping Policy</Link></li>
+            </ul>
             <div className="mt-4">
-              <h4 className="font-bold mb-2">Delivery</h4>
-              <p className="text-sm text-gray-300">Free delivery over R400. R69 Gauteng, R99 Nationwide.</p>
+              <h4 className="font-bold text-sm mb-2">Payment Methods</h4>
+              <div className="flex gap-2 flex-wrap">
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">EFT</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Capitec Pay</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Visa</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Mastercard</span>
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="border-t border-white/10 pt-6 text-center text-sm text-gray-400 flex flex-col items-center">
-          <p>&copy; {new Date().getFullYear()} MzansiDealz.com. Proudly South African.</p>
+
+        <div className="border-t border-white/10 pt-6 text-center text-xs text-gray-400">
+          <p>&copy; {new Date().getFullYear()} MzansiDealz.com — Proudly South African. All rights reserved.</p>
         </div>
       </div>
     </footer>

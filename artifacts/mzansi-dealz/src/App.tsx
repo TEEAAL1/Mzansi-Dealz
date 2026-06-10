@@ -14,6 +14,11 @@ import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import OrderConfirmation from "@/pages/OrderConfirmation";
 import About from "@/pages/About";
+import Contact from "@/pages/Contact";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import TermsConditions from "@/pages/TermsConditions";
+import ReturnsRefunds from "@/pages/ReturnsRefunds";
+import ShippingDelivery from "@/pages/ShippingDelivery";
 import NotFound from "@/pages/not-found";
 
 import AdminLogin from "@/pages/admin/AdminLogin";
@@ -101,6 +106,11 @@ function Router() {
               {(params) => <OrderConfirmation params={{ orderNumber: params.orderNumber }} />}
             </Route>
             <Route path="/about" component={About} />
+            <Route path="/contact" component={Contact} />
+            <Route path="/privacy-policy" component={PrivacyPolicy} />
+            <Route path="/terms-conditions" component={TermsConditions} />
+            <Route path="/returns-refunds" component={ReturnsRefunds} />
+            <Route path="/shipping-delivery" component={ShippingDelivery} />
             <Route component={NotFound} />
           </Switch>
         </Layout>
