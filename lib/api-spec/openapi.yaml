@@ -393,6 +393,7 @@ components:
         - inStock
         - isFeatured
         - isNewArrival
+        - onSale
         - createdAt
       properties:
         id:
@@ -422,6 +423,8 @@ components:
         isFeatured:
           type: boolean
         isNewArrival:
+          type: boolean
+        onSale:
           type: boolean
         tags:
           type: ["string", "null"]
@@ -595,6 +598,8 @@ components:
         isFeatured:
           type: boolean
         isNewArrival:
+          type: boolean
+        onSale:
           type: boolean
         tags:
           type: string

@@ -16,6 +16,7 @@ export const productsTable = pgTable("products", {
   stockCount: integer("stock_count"),
   isFeatured: boolean("is_featured").notNull().default(false),
   isNewArrival: boolean("is_new_arrival").notNull().default(false),
+  onSale: boolean("on_sale").notNull().default(false),
   tags: text("tags"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

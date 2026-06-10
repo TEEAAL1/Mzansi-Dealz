@@ -44,6 +44,7 @@ export const ListProductsResponse = zod.object({
   "stockCount": zod.number().nullish(),
   "isFeatured": zod.boolean(),
   "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
   "createdAt": zod.string()
 })),
@@ -73,6 +74,7 @@ export const GetFeaturedProductsResponseItem = zod.object({
   "stockCount": zod.number().nullish(),
   "isFeatured": zod.boolean(),
   "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -101,6 +103,7 @@ export const GetNewArrivalsResponseItem = zod.object({
   "stockCount": zod.number().nullish(),
   "isFeatured": zod.boolean(),
   "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -141,6 +144,7 @@ export const GetProductResponse = zod.object({
   "stockCount": zod.number().nullish(),
   "isFeatured": zod.boolean(),
   "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -235,6 +239,7 @@ export const CreateProductBody = zod.object({
   "stockCount": zod.number().optional(),
   "isFeatured": zod.boolean().optional(),
   "isNewArrival": zod.boolean().optional(),
+  "onSale": zod.boolean().optional(),
   "tags": zod.string().optional()
 })
 
@@ -257,6 +262,7 @@ export const UpdateProductBody = zod.object({
   "stockCount": zod.number().optional(),
   "isFeatured": zod.boolean().optional(),
   "isNewArrival": zod.boolean().optional(),
+  "onSale": zod.boolean().optional(),
   "tags": zod.string().optional()
 })
 
@@ -275,6 +281,7 @@ export const UpdateProductResponse = zod.object({
   "stockCount": zod.number().nullish(),
   "isFeatured": zod.boolean(),
   "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
   "createdAt": zod.string()
 })

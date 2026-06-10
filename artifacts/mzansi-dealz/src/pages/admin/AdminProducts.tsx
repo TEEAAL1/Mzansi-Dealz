@@ -1,12 +1,17 @@
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useListProducts, getListProductsQueryKey, deleteProduct } from "@workspace/api-client-react";
+import {
+  useListProducts,
+  getListProductsQueryKey,
+  getGetFeaturedProductsQueryKey,
+  getGetNewArrivalsQueryKey,
+  deleteProduct,
+} from "@workspace/api-client-react";
 import { useAdminHeaders } from "@/hooks/use-admin";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Edit2, Trash2 } from "lucide-react";
 import {
@@ -26,25 +31,31 @@ export default function AdminProducts() {
   const headers = useAdminHeaders();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
-  const { data: productsData, isLoading } = useListProducts();
 
-  const handleDelete = async (id: number) => {
+  const { data: productsData, isLoading } = useListProducts({ limit: 200 });
+
+  const handleDelete = async (id: number, name: string) => {
     try {
       await deleteProduct(id, { headers });
-      queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
-      toast({ title: "Product deleted", description: "The product has been removed." });
-    } catch (error) {
+      await queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetFeaturedProductsQueryKey() });
+      await queryClient.invalidateQueries({ queryKey: getGetNewArrivalsQueryKey() });
+      toast({ title: "Product deleted", description: `"${name}" has been removed.` });
+    } catch {
       toast({ title: "Error", description: "Failed to delete product.", variant: "destructive" });
     }
   };
+
+  const products = productsData?.products ?? [];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-500 mt-1">Manage your product catalog.</p>
+          <p className="text-gray-500 mt-1">
+            {isLoading ? "Loading..." : `${products.length} product${products.length !== 1 ? "s" : ""} in your store`}
+          </p>
         </div>
         <Link href="/admin/products/new">
           <Button className="gap-2">
@@ -58,11 +69,11 @@ export default function AdminProducts() {
         <Table>
           <TableHeader className="bg-gray-50">
             <TableRow>
-              <TableHead className="w-16">Image</TableHead>
+              <TableHead className="w-14">Image</TableHead>
               <TableHead>Product</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead className="hidden md:table-cell">Category</TableHead>
               <TableHead>Price</TableHead>
-              <TableHead className="text-center">In Stock</TableHead>
+              <TableHead className="hidden sm:table-cell">Labels</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -72,67 +83,99 @@ export default function AdminProducts() {
                 <TableRow key={i}>
                   <TableCell><Skeleton className="w-10 h-10 rounded-md" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-48 mb-1" /><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+                  <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell className="text-center"><Skeleton className="h-5 w-10 mx-auto rounded-full" /></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-28 rounded-full" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                 </TableRow>
               ))
-            ) : productsData?.products.length === 0 ? (
+            ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-gray-500">
-                  No products found. Click "Add Product" to create one.
+                <TableCell colSpan={6} className="text-center py-16 text-gray-400">
+                  <p className="text-base font-medium text-gray-500 mb-1">No products yet</p>
+                  <p className="text-sm">Click "Add Product" to create your first product.</p>
                 </TableCell>
               </TableRow>
             ) : (
-              productsData?.products.map((product) => (
-                <TableRow key={product.id}>
+              products.map((product) => (
+                <TableRow key={product.id} className="hover:bg-gray-50/50">
                   <TableCell>
-                    <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
-                      <img 
-                        src={product.imageUrl} 
-                        alt={product.name} 
+                    <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/100x100?text=No+Image';
+                          (e.target as HTMLImageElement).src =
+                            "https://placehold.co/100x100/f3f4f6/9ca3af?text=No+Image";
                         }}
                       />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-gray-900">{product.name}</div>
-                    <div className="flex gap-2 mt-1">
-                      {product.featured && <Badge variant="outline" className="text-xs py-0 h-5">Featured</Badge>}
-                      {product.newArrival && <Badge variant="outline" className="text-xs py-0 h-5">New</Badge>}
-                    </div>
+                    <div className="font-medium text-gray-900 leading-tight">{product.name}</div>
+                    {!product.inStock && (
+                      <span className="inline-block mt-1 text-xs text-red-600 font-medium">Out of stock</span>
+                    )}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="bg-gray-100 text-gray-700 font-normal">
-                      {product.category?.name || "Uncategorized"}
+                  <TableCell className="hidden md:table-cell">
+                    <Badge variant="secondary" className="bg-gray-100 text-gray-700 font-normal text-xs">
+                      {product.categoryName || "Uncategorised"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium text-gray-900">{formatPrice(product.price)}</div>
-                    {product.compareAtPrice && product.compareAtPrice > product.price && (
-                      <div className="text-xs text-gray-500 line-through">
-                        {formatPrice(product.compareAtPrice)}
+                    <div className="font-medium text-gray-900 text-sm">{formatPrice(product.price)}</div>
+                    {product.originalPrice > product.price && (
+                      <div className="text-xs text-gray-400 line-through">
+                        {formatPrice(product.originalPrice)}
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="text-center">
-                    <Switch checked={product.inStock} disabled />
+                  <TableCell className="hidden sm:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {product.isFeatured && (
+                        <Badge className="bg-orange-100 text-orange-700 border-0 text-xs py-0 h-5 font-normal">
+                          Featured
+                        </Badge>
+                      )}
+                      {product.isNewArrival && (
+                        <Badge className="bg-blue-100 text-blue-700 border-0 text-xs py-0 h-5 font-normal">
+                          New
+                        </Badge>
+                      )}
+                      {product.onSale && (
+                        <Badge className="bg-green-100 text-green-700 border-0 text-xs py-0 h-5 font-normal">
+                          Sale
+                        </Badge>
+                      )}
+                      {product.discountPercent > 0 && (
+                        <Badge className="bg-red-100 text-red-700 border-0 text-xs py-0 h-5 font-normal">
+                          -{product.discountPercent}%
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Link href={`/admin/products/${product.id}/edit`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-900">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-gray-900"
+                          title="Edit product"
+                        >
                           <Edit2 className="w-4 h-4" />
                         </Button>
                       </Link>
-                      
+
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-gray-400 hover:text-red-600"
+                            title="Delete product"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -140,13 +183,13 @@ export default function AdminProducts() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Product</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                              Are you sure you want to delete "{product.name}"? This cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDelete(product.id)}
+                            <AlertDialogAction
+                              onClick={() => handleDelete(product.id, product.name)}
                               className="bg-red-600 hover:bg-red-700 text-white"
                             >
                               Delete

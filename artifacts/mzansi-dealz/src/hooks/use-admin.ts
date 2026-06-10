@@ -19,7 +19,7 @@ export function useAdminToken() {
   return { token, setToken, clearToken };
 }
 
-export function useAdminHeaders() {
+export function useAdminHeaders(): Record<string, string> {
   const { token } = useAdminToken();
   return token ? { "x-admin-token": token } : {};
 }

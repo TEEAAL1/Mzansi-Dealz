@@ -26,6 +26,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
     isNewArrival: p.isNewArrival,
+    onSale: p.onSale,
     tags: p.tags,
     createdAt: p.createdAt.toISOString(),
   };
@@ -137,7 +138,7 @@ router.get("/products", async (req, res) => {
   }
 
   if (params.on_sale === "true" || params.on_sale === true) {
-    conditions.push(sql`${productsTable.discountPercent} > 0`);
+    conditions.push(eq(productsTable.onSale, true));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

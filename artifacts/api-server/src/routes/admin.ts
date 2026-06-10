@@ -7,7 +7,6 @@ const router = Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "mzansi-admin-2024";
 
-// Auth middleware
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["x-admin-token"] as string | undefined;
   if (!auth || auth !== ADMIN_PASSWORD) {
@@ -80,7 +79,6 @@ router.get("/admin/orders", requireAdmin, async (req, res) => {
     db.select({ count: count() }).from(ordersTable).where(whereClause),
   ]);
 
-  // Get item counts per order
   const orderIds = orders.map((o) => o.id);
   const itemCounts =
     orderIds.length > 0
@@ -144,6 +142,7 @@ const CreateProductSchema = z.object({
   stockCount: z.number().int().optional(),
   isFeatured: z.boolean().optional().default(false),
   isNewArrival: z.boolean().optional().default(false),
+  onSale: z.boolean().optional().default(false),
   tags: z.string().optional(),
 });
 
@@ -186,6 +185,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
     isNewArrival: p.isNewArrival,
+    onSale: p.onSale,
     tags: p.tags,
     createdAt: p.createdAt.toISOString(),
   };
@@ -200,7 +200,9 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
   }
 
   const data = parsed.data;
-  const discountPercent = Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100);
+  const discountPercent = data.originalPrice > data.price
+    ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
+    : 0;
   const slug = await uniqueSlug(slugify(data.name));
 
   const [product] = await db
@@ -218,11 +220,11 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
       stockCount: data.stockCount ?? null,
       isFeatured: data.isFeatured ?? false,
       isNewArrival: data.isNewArrival ?? false,
+      onSale: data.onSale ?? false,
       tags: data.tags ?? null,
     })
     .returning();
 
-  // Update category product count
   await db
     .update(categoriesTable)
     .set({ productCount: sql`${categoriesTable.productCount} + 1` })
@@ -242,7 +244,9 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
   }
 
   const data = parsed.data;
-  const discountPercent = Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100);
+  const discountPercent = data.originalPrice > data.price
+    ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
+    : 0;
 
   const existing = await db.select().from(productsTable).where(eq(productsTable.id, id)).limit(1);
   if (!existing.length) {
@@ -252,7 +256,6 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
 
   const slug = await uniqueSlug(slugify(data.name), id);
 
-  // Update category count if category changed
   if (existing[0].categoryId !== data.categoryId) {
     await db
       .update(categoriesTable)
@@ -279,6 +282,7 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
       stockCount: data.stockCount ?? null,
       isFeatured: data.isFeatured ?? false,
       isNewArrival: data.isNewArrival ?? false,
+      onSale: data.onSale ?? false,
       tags: data.tags ?? null,
     })
     .where(eq(productsTable.id, id))

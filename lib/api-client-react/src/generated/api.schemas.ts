@@ -26,6 +26,7 @@ export interface Product {
   stockCount?: number | null;
   isFeatured: boolean;
   isNewArrival: boolean;
+  onSale: boolean;
   /** @nullable */
   tags?: string | null;
   createdAt: string;
@@ -102,6 +103,7 @@ export interface CreateProductRequest {
   stockCount?: number;
   isFeatured?: boolean;
   isNewArrival?: boolean;
+  onSale?: boolean;
   tags?: string;
 }
 
