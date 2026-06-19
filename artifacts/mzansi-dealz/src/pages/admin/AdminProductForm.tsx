@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function AdminProductForm({ params }: { params?: { id?: string } }) {
   const isEdit = !!params?.id && params.id !== "new";
@@ -246,32 +247,10 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
               <CardTitle>Product Image</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="imageUrl">Image URL *</Label>
-                <Input
-                  id="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                  required
-                />
-                <p className="text-xs text-gray-400">Paste a direct link to a product image</p>
-              </div>
-              {formData.imageUrl && (
-                <div className="mt-2 border rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center h-48 w-full max-w-xs">
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="max-h-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                    onLoad={(e) => {
-                      (e.target as HTMLImageElement).style.display = "block";
-                    }}
-                  />
-                </div>
-              )}
+              <ImageUploader
+                value={formData.imageUrl}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+              />
             </CardContent>
           </Card>
         </div>

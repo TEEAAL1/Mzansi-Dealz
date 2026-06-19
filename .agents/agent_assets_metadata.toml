@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "PzFzgml4gRfaMwRfHO79F"
+uri = "file://artifacts/mzansi-dealz/vercel.json"
+type = "unspecified"
+title = "Vercel Deployment Config"

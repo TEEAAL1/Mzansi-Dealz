@@ -57,7 +57,12 @@ function AdminRoutes() {
   return (
     <AdminLayout>
       <Switch>
-        <Route path="/" component={AdminDashboard} />
+        <Route path="/">
+          {() => {
+            navigate("/products");
+            return null;
+          }}
+        </Route>
         <Route path="/products" component={AdminProducts} />
         <Route path="/products/new">
           {() => <AdminProductForm params={{ id: "new" }} />}
@@ -75,14 +80,7 @@ function AdminRoutes() {
 function Router() {
   return (
     <Switch>
-      <Route path="/admin/:rest*">
-        {() => (
-          <WouterRouter base="/admin">
-            <AdminRoutes />
-          </WouterRouter>
-        )}
-      </Route>
-      <Route path="/admin">
+      <Route path="/admin/*">
         {() => (
           <WouterRouter base="/admin">
             <AdminRoutes />

@@ -31,4 +31,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+app.use("/uploads", express.static("uploads"));
+
 export default app;

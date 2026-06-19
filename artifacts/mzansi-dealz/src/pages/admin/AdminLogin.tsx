@@ -24,7 +24,7 @@ export default function AdminLogin() {
       {
         onSuccess: (res) => {
           setToken(res.token);
-          setLocation("/admin");
+          setLocation("/admin/products");
         },
         onError: () => {
           setError("Incorrect password or login failed.");
