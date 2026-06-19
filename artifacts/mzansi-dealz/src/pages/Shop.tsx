@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ListProductsSort } from "@workspace/api-zod";
+import { ListProductsSort } from "@workspace/api-client-react";
 
 export default function Shop({ params }: { params?: { category?: string } }) {
   const searchStr = useSearch();

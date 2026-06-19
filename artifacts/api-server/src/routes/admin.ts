@@ -120,7 +120,7 @@ router.put("/admin/orders/:orderNumber/status", requireAdmin, async (req, res) =
   const updated = await db
     .update(ordersTable)
     .set({ status, updatedAt: new Date() })
-    .where(eq(ordersTable.orderNumber, orderNumber))
+    .where(eq(ordersTable.orderNumber, orderNumber as string))
     .returning();
 
   if (!updated.length) {

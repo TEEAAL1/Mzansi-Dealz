@@ -137,7 +137,7 @@ router.get("/products", async (req, res) => {
     conditions.push(ilike(productsTable.name, `%${params.search}%`));
   }
 
-  if (params.on_sale === "true" || params.on_sale === true) {
+  if (params.on_sale) {
     conditions.push(eq(productsTable.onSale, true));
   }
 

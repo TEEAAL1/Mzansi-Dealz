@@ -126,14 +126,14 @@ export default function AdminDashboard() {
                     <TableCell className="text-gray-500 text-sm">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="text-gray-600">{order.items.length} items</TableCell>
+                    <TableCell className="text-gray-600">{order.itemCount} items</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={`capitalize font-medium ${getStatusColor(order.status)}`}>
                         {order.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium text-gray-900">
-                      {formatPrice(order.totalAmount)}
+                      {formatPrice(order.total)}
                     </TableCell>
                   </TableRow>
                 ))

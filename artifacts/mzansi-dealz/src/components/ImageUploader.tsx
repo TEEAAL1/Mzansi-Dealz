@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, ImageIcon, X } from "lucide-react";
+import { apiUrl } from "@workspace/api-client-react";
 
 interface ImageUploaderProps {
   value: string;
@@ -25,7 +26,7 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
       const formData = new FormData();
       formData.append("image", file);
 
-      const res = await fetch("/api/uploads", {
+      const res = await fetch(apiUrl("/api/uploads"), {
         method: "POST",
         body: formData,
       });

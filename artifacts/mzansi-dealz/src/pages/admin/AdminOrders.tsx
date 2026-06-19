@@ -26,7 +26,7 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
-      await updateOrderStatus(orderId, { status: newStatus as any }, { headers });
+      await updateOrderStatus(orderId.toString(), { status: newStatus as any }, { headers });
       queryClient.invalidateQueries({ queryKey: getListAdminOrdersQueryKey() });
       toast({ title: "Status updated", description: `Order #${orderId} marked as ${newStatus}.` });
     } catch (error) {
@@ -118,9 +118,9 @@ export default function AdminOrders() {
                       year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                     })}
                   </TableCell>
-                  <TableCell className="text-gray-600">{order.items.length} items</TableCell>
+                  <TableCell className="text-gray-600">{order.itemCount} items</TableCell>
                   <TableCell className="text-right font-medium text-gray-900">
-                    {formatPrice(order.totalAmount)}
+                    {formatPrice(order.total)}
                   </TableCell>
                   <TableCell>
                     <Select

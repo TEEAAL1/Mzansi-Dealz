@@ -9,7 +9,8 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
   const { data: order, isLoading, error } = useGetOrder(params.orderNumber, {
     query: {
       enabled: !!params.orderNumber,
-      refetchInterval: 5000 // poll to check if status changes to paid
+      refetchInterval: 5000,
+      queryKey: ["order", params.orderNumber]
     }
   });
 
