@@ -7,6 +7,18 @@ const router = Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "MzansiDealz@2024";
 
+const DEFAULT_CATEGORIES = [
+  { name: "Electronics", slug: "electronics", icon: "Cpu", description: "Gadgets, tech, audio & accessories" },
+  { name: "Home & Living", slug: "home-living", icon: "Home", description: "Furniture, kitchen, appliances & decor" },
+  { name: "Beauty & Health", slug: "beauty-health", icon: "Sparkles", description: "Skincare, haircare, wellness & fitness" },
+  { name: "Fashion", slug: "fashion", icon: "Shirt", description: "Clothing, shoes, bags & accessories" },
+  { name: "Outdoor & Lifestyle", slug: "outdoor-lifestyle", icon: "Sun", description: "Camping, sports, gardening & leisure" },
+  { name: "Wellness", slug: "wellness", icon: "Heart", description: "Health, supplements, self-care" },
+  { name: "Baby & Kids", slug: "baby-kids", icon: "Baby", description: "Toys, baby gear, kids clothing & essentials" },
+  { name: "Furniture", slug: "furniture", icon: "Sofa", description: "Beds, sofas, tables, storage & more" },
+  { name: "Gifts & Accessories", slug: "gifts-accessories", icon: "Gift", description: "Gift ideas, jewellery, watches & accessories" },
+];
+
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["x-admin-token"] as string | undefined;
   if (!auth || auth !== ADMIN_PASSWORD) {
@@ -308,6 +320,22 @@ router.delete("/admin/products/:id", requireAdmin, async (req, res) => {
     .where(eq(categoriesTable.id, existing[0].categoryId));
 
   res.status(204).send();
+});
+
+// POST /admin/seed-categories — create default categories if none exist
+router.post("/admin/seed-categories", requireAdmin, async (req, res) => {
+  const existing = await db.select().from(categoriesTable);
+  if (existing.length > 0) {
+    res.status(200).json({ created: 0, message: "Categories already exist." });
+    return;
+  }
+
+  const created = await db
+    .insert(categoriesTable)
+    .values(DEFAULT_CATEGORIES)
+    .returning();
+
+  res.status(201).json({ created: created.length, categories: created });
 });
 
 export default router;

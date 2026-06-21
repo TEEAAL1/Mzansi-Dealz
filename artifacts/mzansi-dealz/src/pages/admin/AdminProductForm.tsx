@@ -6,6 +6,7 @@ import {
   useListCategories,
   createProduct,
   updateProduct,
+  getListCategoriesQueryKey,
   getListProductsQueryKey,
   getGetFeaturedProductsQueryKey,
   getGetNewArrivalsQueryKey,
@@ -18,9 +19,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus } from "lucide-react";
+import type { Category } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import ImageUploader from "@/components/ImageUploader";
+import { apiUrl } from "@workspace/api-client-react";
+
+const FALLBACK_CATEGORIES: Category[] = [
+  { id: 1, name: "Electronics", slug: "electronics", icon: "Cpu", productCount: 0, description: "Gadgets, tech, audio & accessories" },
+  { id: 2, name: "Home & Living", slug: "home-living", icon: "Home", productCount: 0, description: "Furniture, kitchen, appliances & decor" },
+  { id: 3, name: "Beauty & Health", slug: "beauty-health", icon: "Sparkles", productCount: 0, description: "Skincare, haircare, wellness & fitness" },
+  { id: 4, name: "Fashion", slug: "fashion", icon: "Shirt", productCount: 0, description: "Clothing, shoes, bags & accessories" },
+  { id: 5, name: "Outdoor & Lifestyle", slug: "outdoor-lifestyle", icon: "Sun", productCount: 0, description: "Camping, sports, gardening & leisure" },
+  { id: 6, name: "Wellness", slug: "wellness", icon: "Heart", productCount: 0, description: "Health, supplements, self-care" },
+  { id: 7, name: "Baby & Kids", slug: "baby-kids", icon: "Baby", productCount: 0, description: "Toys, baby gear, kids clothing & essentials" },
+  { id: 8, name: "Furniture", slug: "furniture", icon: "Sofa", productCount: 0, description: "Beds, sofas, tables, storage & more" },
+  { id: 9, name: "Gifts & Accessories", slug: "gifts-accessories", icon: "Gift", productCount: 0, description: "Gift ideas, jewellery, watches & accessories" },
+];
 
 export default function AdminProductForm({ params }: { params?: { id?: string } }) {
   const isEdit = !!params?.id && params.id !== "new";
@@ -31,7 +46,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: categoriesData } = useListCategories();
+  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useListCategories();
   const { data: productData, isLoading: productLoading } = useGetProduct(productId, {
     query: { enabled: isEdit, queryKey: ["product", productId] },
   });
@@ -52,6 +67,13 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
   });
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const effectiveCategories = categoriesData && categoriesData.length > 0
+    ? categoriesData
+    : FALLBACK_CATEGORIES;
+
+  const hasNoCategories = !categoriesLoading && (!categoriesData || categoriesData.length === 0);
 
   useEffect(() => {
     if (isEdit && productData) {
@@ -80,6 +102,30 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
     oldPrice > currentPrice && currentPrice > 0
       ? Math.round(((oldPrice - currentPrice) / oldPrice) * 100)
       : 0;
+
+  const handleSeedCategories = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/seed-categories"), {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to seed categories");
+      }
+      await queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
+      toast({ title: "Categories created", description: "Default categories have been added to the database." });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to seed categories",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,21 +309,47 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
+                {hasNoCategories && (
+                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-xs text-yellow-800">
+                    No categories found in the database.
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSeedCategories}
+                      disabled={isSeeding}
+                      className="mt-1 w-full text-xs h-7"
+                    >
+                      {isSeeding ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : (
+                        <Plus className="w-3 h-3 mr-1" />
+                      )}
+                      Create Default Categories
+                    </Button>
+                  </div>
+                )}
                 <Select
                   value={formData.categoryId}
                   onValueChange={(val) => setFormData({ ...formData, categoryId: val })}
+                  disabled={categoriesLoading}
                 >
                   <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder={categoriesLoading ? "Loading..." : "Select a category"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    {categoriesData?.map((c) => (
+                  <SelectContent className="max-h-72">
+                    {effectiveCategories.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
                         {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {categoriesError && (
+                  <p className="text-xs text-red-500">
+                    Failed to load categories. Using fallback options.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -333,7 +405,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
                 <div>
                   <Label className="text-sm font-medium">Featured Product</Label>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Shows in "Today's Top Deals" on the homepage
+                    Shows in &quot;Today&apos;s Top Deals&quot; on the homepage
                   </p>
                 </div>
                 <Switch
@@ -346,7 +418,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
                 <div>
                   <Label className="text-sm font-medium">New Arrival</Label>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Shows in the "New Arrivals" section
+                    Shows in the &quot;New Arrivals&quot; section
                   </p>
                 </div>
                 <Switch
@@ -359,7 +431,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
                 <div>
                   <Label className="text-sm font-medium">Sale / Deal</Label>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Appears in the "On Sale" filter and shows a sale badge
+                    Appears in the &quot;On Sale&quot; filter and shows a sale badge
                   </p>
                 </div>
                 <Switch
