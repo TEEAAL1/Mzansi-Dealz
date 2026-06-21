@@ -205,103 +205,119 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
 
 // POST /admin/products
 router.post("/admin/products", requireAdmin, async (req, res) => {
-  const parsed = CreateProductSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
-    return;
-  }
+  try {
+    const parsed = CreateProductSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
+      return;
+    }
 
-  const data = parsed.data;
-  const discountPercent = data.originalPrice > data.price
-    ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
-    : 0;
-  const slug = await uniqueSlug(slugify(data.name));
+    const data = parsed.data;
+    const discountPercent = data.originalPrice > data.price
+      ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
+      : 0;
+    const slug = await uniqueSlug(slugify(data.name));
 
-  const [product] = await db
-    .insert(productsTable)
-    .values({
-      name: data.name,
-      slug,
-      description: data.description ?? null,
-      price: data.price.toFixed(2),
-      originalPrice: data.originalPrice.toFixed(2),
-      discountPercent,
-      categoryId: data.categoryId,
-      imageUrl: data.imageUrl,
-      inStock: data.inStock ?? true,
-      stockCount: data.stockCount ?? null,
-      isFeatured: data.isFeatured ?? false,
-      isNewArrival: data.isNewArrival ?? false,
-      onSale: data.onSale ?? false,
-      tags: data.tags ?? null,
-    })
-    .returning();
+    const [product] = await db
+      .insert(productsTable)
+      .values({
+        name: data.name,
+        slug,
+        description: data.description ?? null,
+        price: data.price.toFixed(2),
+        originalPrice: data.originalPrice.toFixed(2),
+        discountPercent,
+        categoryId: data.categoryId,
+        imageUrl: data.imageUrl,
+        inStock: data.inStock ?? true,
+        stockCount: data.stockCount ?? null,
+        isFeatured: data.isFeatured ?? false,
+        isNewArrival: data.isNewArrival ?? false,
+        onSale: data.onSale ?? false,
+        tags: data.tags ?? null,
+      })
+      .returning();
 
-  await db
-    .update(categoriesTable)
-    .set({ productCount: sql`${categoriesTable.productCount} + 1` })
-    .where(eq(categoriesTable.id, data.categoryId));
-
-  const cats = await db.select().from(categoriesTable).where(eq(categoriesTable.id, data.categoryId)).limit(1);
-  res.status(201).json(toProductResponse(product, cats[0]?.name ?? ""));
-});
-
-// PUT /admin/products/:id
-router.put("/admin/products/:id", requireAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  const parsed = CreateProductSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
-    return;
-  }
-
-  const data = parsed.data;
-  const discountPercent = data.originalPrice > data.price
-    ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
-    : 0;
-
-  const existing = await db.select().from(productsTable).where(eq(productsTable.id, id)).limit(1);
-  if (!existing.length) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-
-  const slug = await uniqueSlug(slugify(data.name), id);
-
-  if (existing[0].categoryId !== data.categoryId) {
-    await db
-      .update(categoriesTable)
-      .set({ productCount: sql`GREATEST(0, ${categoriesTable.productCount} - 1)` })
-      .where(eq(categoriesTable.id, existing[0].categoryId));
     await db
       .update(categoriesTable)
       .set({ productCount: sql`${categoriesTable.productCount} + 1` })
       .where(eq(categoriesTable.id, data.categoryId));
+
+    const cats = await db.select().from(categoriesTable).where(eq(categoriesTable.id, data.categoryId)).limit(1);
+    res.status(201).json(toProductResponse(product, cats[0]?.name ?? ""));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create product");
+    res.status(500).json({
+      error: "Database error",
+      message: "Could not save product. Please check the database connection and try again.",
+    });
   }
+});
 
-  const [updated] = await db
-    .update(productsTable)
-    .set({
-      name: data.name,
-      slug,
-      description: data.description ?? null,
-      price: data.price.toFixed(2),
-      originalPrice: data.originalPrice.toFixed(2),
-      discountPercent,
-      categoryId: data.categoryId,
-      imageUrl: data.imageUrl,
-      inStock: data.inStock ?? true,
-      stockCount: data.stockCount ?? null,
-      isFeatured: data.isFeatured ?? false,
-      isNewArrival: data.isNewArrival ?? false,
-      onSale: data.onSale ?? false,
-      tags: data.tags ?? null,
-    })
-    .where(eq(productsTable.id, id))
-    .returning();
+// PUT /admin/products/:id
+router.put("/admin/products/:id", requireAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const parsed = CreateProductSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
+      return;
+    }
 
-  const cats = await db.select().from(categoriesTable).where(eq(categoriesTable.id, data.categoryId)).limit(1);
-  res.json(toProductResponse(updated, cats[0]?.name ?? ""));
+    const data = parsed.data;
+    const discountPercent = data.originalPrice > data.price
+      ? Math.round(((data.originalPrice - data.price) / data.originalPrice) * 100)
+      : 0;
+
+    const existing = await db.select().from(productsTable).where(eq(productsTable.id, id)).limit(1);
+    if (!existing.length) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+
+    const slug = await uniqueSlug(slugify(data.name), id);
+
+    if (existing[0].categoryId !== data.categoryId) {
+      await db
+        .update(categoriesTable)
+        .set({ productCount: sql`GREATEST(0, ${categoriesTable.productCount} - 1)` })
+        .where(eq(categoriesTable.id, existing[0].categoryId));
+      await db
+        .update(categoriesTable)
+        .set({ productCount: sql`${categoriesTable.productCount} + 1` })
+        .where(eq(categoriesTable.id, data.categoryId));
+    }
+
+    const [updated] = await db
+      .update(productsTable)
+      .set({
+        name: data.name,
+        slug,
+        description: data.description ?? null,
+        price: data.price.toFixed(2),
+        originalPrice: data.originalPrice.toFixed(2),
+        discountPercent,
+        categoryId: data.categoryId,
+        imageUrl: data.imageUrl,
+        inStock: data.inStock ?? true,
+        stockCount: data.stockCount ?? null,
+        isFeatured: data.isFeatured ?? false,
+        isNewArrival: data.isNewArrival ?? false,
+        onSale: data.onSale ?? false,
+        tags: data.tags ?? null,
+      })
+      .where(eq(productsTable.id, id))
+      .returning();
+
+    const cats = await db.select().from(categoriesTable).where(eq(categoriesTable.id, data.categoryId)).limit(1);
+    res.json(toProductResponse(updated, cats[0]?.name ?? ""));
+  } catch (err) {
+    req.log.error({ err }, "Failed to update product");
+    res.status(500).json({
+      error: "Database error",
+      message: "Could not update product. Please check the database connection and try again.",
+    });
+  }
 });
 
 // DELETE /admin/products/:id
