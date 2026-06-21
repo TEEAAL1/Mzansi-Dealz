@@ -5,7 +5,7 @@ import { z } from "zod";
 
 const router = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "mzansi-admin-2024";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "MzansiDealz@2024";
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers["x-admin-token"] as string | undefined;
