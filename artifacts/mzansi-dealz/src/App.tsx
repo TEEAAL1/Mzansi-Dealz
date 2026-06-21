@@ -63,6 +63,7 @@ function AdminRoutes() {
             return null;
           }}
         </Route>
+        <Route path="/dashboard" component={AdminDashboard} />
         <Route path="/products" component={AdminProducts} />
         <Route path="/products/new">
           {() => <AdminProductForm params={{ id: "new" }} />}
@@ -80,6 +81,13 @@ function AdminRoutes() {
 function Router() {
   return (
     <Switch>
+      <Route path="/admin">
+        {() => (
+          <WouterRouter base="/admin">
+            <AdminRoutes />
+          </WouterRouter>
+        )}
+      </Route>
       <Route path="/admin/*">
         {() => (
           <WouterRouter base="/admin">

@@ -178,7 +178,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
       await queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getGetFeaturedProductsQueryKey() });
       await queryClient.invalidateQueries({ queryKey: getGetNewArrivalsQueryKey() });
-      setLocation("/admin/products");
+      setLocation("/products");
     } catch (error: unknown) {
       const msg =
         error && typeof error === "object" && "message" in error
@@ -201,7 +201,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/admin/products")}>
+        <Button variant="ghost" size="icon" onClick={() => setLocation("/products")}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-2xl font-bold text-gray-900">
@@ -446,7 +446,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
             <Button
               type="button"
               variant="outline"
-              onClick={() => setLocation("/admin/products")}
+              onClick={() => setLocation("/products")}
               disabled={isSaving}
             >
               Cancel

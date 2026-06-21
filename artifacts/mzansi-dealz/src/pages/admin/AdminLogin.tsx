@@ -24,7 +24,7 @@ export default function AdminLogin() {
       {
         onSuccess: (res) => {
           setToken(res.token);
-          setLocation("/admin/products");
+          setLocation("/products");
         },
         onError: (err) => {
           const apiError = err as { status?: number; message?: string; url?: string };

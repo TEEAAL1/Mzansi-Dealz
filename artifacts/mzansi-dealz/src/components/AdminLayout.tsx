@@ -7,9 +7,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
   const navItems = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Products", href: "/admin/products", icon: Package },
-    { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Products", href: "/products", icon: Package },
+    { name: "Orders", href: "/orders", icon: ShoppingBag },
   ];
 
   return (
@@ -22,7 +22,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location === item.href || (location.startsWith(item.href) && item.href !== "/admin");
+            const isActive = location === item.href || (location.startsWith(item.href) && item.href !== "/dashboard");
             return (
               <Link key={item.name} href={item.href}>
                 <span className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>

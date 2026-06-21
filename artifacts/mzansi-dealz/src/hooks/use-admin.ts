@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useState } from "react";
 
 export function useAdminToken() {
   const [token, setTokenState] = useState<string | null>(() => {
@@ -26,13 +25,5 @@ export function useAdminHeaders(): Record<string, string> {
 
 export function useAdminAuth() {
   const { token, clearToken } = useAdminToken();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!token) {
-      setLocation("/admin/login");
-    }
-  }, [token, setLocation]);
-
   return { token, clearToken };
 }

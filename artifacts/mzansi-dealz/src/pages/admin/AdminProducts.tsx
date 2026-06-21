@@ -57,7 +57,7 @@ export default function AdminProducts() {
             {isLoading ? "Loading..." : `${products.length} product${products.length !== 1 ? "s" : ""} in your store`}
           </p>
         </div>
-        <Link href="/admin/products/new">
+        <Link href="/products/new">
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
             Add Product
@@ -157,7 +157,7 @@ export default function AdminProducts() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Link href={`/admin/products/${product.id}/edit`}>
+                      <Link href={`/products/${product.id}/edit`}>
                         <Button
                           variant="ghost"
                           size="icon"
