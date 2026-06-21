@@ -26,8 +26,19 @@ export default function AdminLogin() {
           setToken(res.token);
           setLocation("/admin/products");
         },
-        onError: () => {
-          setError("Incorrect password or login failed.");
+        onError: (err) => {
+          const apiError = err as { status?: number; message?: string; url?: string };
+          const status = apiError?.status;
+          const message = apiError?.message || "";
+          if (status === 401) {
+            setError("Incorrect password.");
+          } else if (status === 404) {
+            setError("API server not found. Make sure VITE_API_BASE_URL is set correctly in Vercel environment variables.");
+          } else if (status === 0 || message?.includes("fetch")) {
+            setError("Cannot reach the API server. Check your network connection and VITE_API_BASE_URL setting.");
+          } else {
+            setError(`Login failed (${status || "unknown"}): ${message}`);
+          }
         },
       }
     );
