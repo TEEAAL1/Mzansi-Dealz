@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ArrowLeft, CreditCard, Settings } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ArrowLeft, CreditCard, Settings, UploadCloud } from "lucide-react";
 import { useAdminAuth } from "@/hooks/use-admin";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Products", href: "/products", icon: Package },
+    { name: "Import products", href: "/products/import", icon: UploadCloud },
     { name: "Categories", href: "/categories", icon: Tags },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
     { name: "Payments", href: "/payments", icon: CreditCard },
@@ -25,7 +26,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location === item.href || (location.startsWith(item.href) && item.href !== "/dashboard");
+            const isProductsImport = item.href === "/products" && location.startsWith("/products/import");
+            const isActive = !isProductsImport && (location === item.href || (location.startsWith(item.href) && item.href !== "/dashboard"));
             return (
               <Link key={item.name} href={item.href}>
                 <span className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>

@@ -29,6 +29,32 @@ export interface Product {
   onSale: boolean;
   /** @nullable */
   tags?: string | null;
+  categorySlug?: string;
+  /** @nullable */
+  sku?: string | null;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  specifications?: string | null;
+  /** @nullable */
+  features?: string | null;
+  /** @nullable */
+  galleryImages?: string | null;
+  /** @nullable */
+  stockStatus?: string | null;
+  /** @nullable */
+  weight?: string | null;
+  /** @nullable */
+  dimensions?: string | null;
+  /** @nullable */
+  variants?: string | null;
+  /** @nullable */
+  metaTitle?: string | null;
+  /** @nullable */
+  metaDescription?: string | null;
+  /** @nullable */
+  searchKeywords?: string | null;
+  status?: string;
   createdAt: string;
 }
 
@@ -190,6 +216,57 @@ export interface CreateProductRequest {
   isNewArrival?: boolean;
   onSale?: boolean;
   tags?: string;
+}
+
+export interface ProductImportOptions {
+  overwriteExisting?: boolean;
+  skipExisting?: boolean;
+  importImages?: boolean;
+}
+
+export interface ProductImportRun {
+  id: number;
+  sourceDomain: string;
+  status: string;
+  totalDiscovered: number;
+  productsImported: number;
+  productsFailed: number;
+  missingImages: number;
+  missingPrices: number;
+  overwriteExisting: boolean;
+  skipExisting: boolean;
+  importImages: boolean;
+  /** @nullable */
+  csvPath?: string | null;
+  /** @nullable */
+  error?: string | null;
+  createdAt: string;
+  /** @nullable */
+  completedAt?: string | null;
+}
+
+export interface ProductImportItem {
+  id: number;
+  sourceUrl: string;
+  /** @nullable */
+  sku?: string | null;
+  /** @nullable */
+  name?: string | null;
+  status: string;
+  /** @nullable */
+  error?: string | null;
+  missingImage: boolean;
+  missingPrice: boolean;
+}
+
+export interface ProductImportStatusResponse {
+  run: ProductImportRun | null;
+  items: ProductImportItem[];
+}
+
+export interface ProductImportStartResponse {
+  run: ProductImportRun;
+  message: string;
 }
 
 export interface CreateCategoryRequest {

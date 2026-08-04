@@ -24,6 +24,7 @@ import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminProductImport from "@/pages/admin/AdminProductImport";
 import AdminCategories from "@/pages/admin/AdminCategories";
 import AdminProductForm from "@/pages/admin/AdminProductForm";
 import AdminOrders from "@/pages/admin/AdminOrders";
@@ -72,6 +73,7 @@ function AdminRoutes() {
         </Route>
         <Route path="/dashboard" component={AdminDashboard} />
         <Route path="/products" component={AdminProducts} />
+        <Route path="/products/import" component={AdminProductImport} />
         <Route path="/categories" component={AdminCategories} />
         <Route path="/products/new">
           {() => <AdminProductForm params={{ id: "new" }} />}

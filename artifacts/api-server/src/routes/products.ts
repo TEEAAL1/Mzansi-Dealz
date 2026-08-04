@@ -11,6 +11,7 @@ import {
 const router = Router();
 
 function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: string) {
+  const categorySlug = categoryName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return {
     id: p.id,
     name: p.name,
@@ -21,6 +22,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     discountPercent: p.discountPercent,
     categoryId: p.categoryId,
     categoryName,
+    categorySlug,
     imageUrl: p.imageUrl,
     inStock: p.inStock,
     stockCount: p.stockCount,
@@ -28,6 +30,19 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     isNewArrival: p.isNewArrival,
     onSale: p.onSale,
     tags: p.tags,
+    sku: p.sku,
+    brand: p.brand,
+    specifications: p.specifications,
+    features: p.features,
+    galleryImages: p.galleryImages,
+    stockStatus: p.stockStatus,
+    weight: p.weight,
+    dimensions: p.dimensions,
+    variants: p.variants,
+    metaTitle: p.metaTitle,
+    metaDescription: p.metaDescription,
+    searchKeywords: p.searchKeywords,
+    status: p.status,
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -134,7 +149,14 @@ router.get("/products", async (req, res) => {
   }
 
   if (params.search) {
-    conditions.push(ilike(productsTable.name, `%${params.search}%`));
+    const search = `%${params.search}%`;
+    conditions.push(sql`(
+      ${productsTable.name} ILIKE ${search}
+      OR COALESCE(${productsTable.tags}, '') ILIKE ${search}
+      OR COALESCE(${productsTable.brand}, '') ILIKE ${search}
+      OR COALESCE(${productsTable.description}, '') ILIKE ${search}
+      OR COALESCE(${productsTable.searchKeywords}, '') ILIKE ${search}
+    )`);
   }
 
   if (params.on_sale) {

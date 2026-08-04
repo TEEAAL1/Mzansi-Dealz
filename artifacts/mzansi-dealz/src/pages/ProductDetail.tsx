@@ -3,8 +3,8 @@ import { formatZAR } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, Truck, ShieldCheck, ArrowLeft, Plus, Minus } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Truck, ShieldCheck, ArrowLeft, Plus, Minus, ListChecks, Ruler } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +15,23 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const { addToCart } = useCart();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(1);
+
+  useEffect(() => {
+    if (!product) return;
+    const previousTitle = document.title;
+    const descriptionMeta = document.querySelector('meta[name="description"]');
+    const previousDescription = descriptionMeta?.getAttribute("content") ?? null;
+    document.title = product.metaTitle || `${product.name} | Mzansi Dealz`;
+    if (descriptionMeta && product.metaDescription) {
+      descriptionMeta.setAttribute("content", product.metaDescription);
+    }
+    return () => {
+      document.title = previousTitle;
+      if (descriptionMeta && previousDescription !== null) {
+        descriptionMeta.setAttribute("content", previousDescription);
+      }
+    };
+  }, [product]);
 
   if (isNaN(id)) return <div className="container p-8">Invalid product ID</div>;
 
@@ -76,18 +93,32 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                 SAVE {product.discountPercent}%
               </div>
             )}
-            <img 
-              src={product.imageUrl} 
-              alt={product.name} 
+            <img
+              src={product.imageUrl}
+              alt={product.name}
               className="w-full h-full object-cover"
             />
           </div>
+          {product.galleryImages && (
+            <div className="mt-3 flex gap-2 overflow-x-auto" aria-label="Product gallery">
+              {(() => {
+                try {
+                  const gallery = JSON.parse(product.galleryImages) as string[];
+                  return gallery.map((image, index) => (
+                    <img key={`${image}-${index}`} src={image} alt={`${product.name} view ${index + 1}`} className="h-16 w-16 shrink-0 rounded-lg border border-border object-cover" />
+                  ));
+                } catch {
+                  return null;
+                }
+              })()}
+            </div>
+          )}
         </div>
 
         {/* Product Info */}
         <div className="w-full md:w-1/2 flex flex-col">
           <div className="mb-2">
-            <Link href={`/shop/${product.categoryId}`} className="text-sm font-bold text-primary hover:underline uppercase tracking-wider">
+            <Link href={`/shop/${product.categorySlug || product.categoryId}`} className="text-sm font-bold text-primary hover:underline uppercase tracking-wider">
               {product.categoryName}
             </Link>
           </div>
@@ -121,6 +152,22 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
               <p>No description available for this deal.</p>
             )}
           </div>
+
+          {(product.brand || product.sku || product.weight || product.dimensions) && (
+            <div className="mb-6 grid gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm sm:grid-cols-2">
+              {product.brand && <div><span className="text-muted-foreground">Brand</span><p className="font-semibold text-foreground">{product.brand}</p></div>}
+              {product.sku && <div><span className="text-muted-foreground">SKU</span><p className="font-semibold text-foreground">{product.sku}</p></div>}
+              {product.weight && <div className="flex gap-2"><Ruler className="h-4 w-4 text-primary" /><div><span className="text-muted-foreground">Weight</span><p className="font-semibold text-foreground">{product.weight}</p></div></div>}
+              {product.dimensions && <div><span className="text-muted-foreground">Dimensions</span><p className="font-semibold text-foreground">{product.dimensions}</p></div>}
+            </div>
+          )}
+
+          {(product.features || product.specifications) && (
+            <div className="mb-8 space-y-4">
+              {product.features && <div><h2 className="mb-2 flex items-center gap-2 text-lg font-bold"><ListChecks className="h-5 w-5 text-primary" />Features</h2><p className="whitespace-pre-line text-sm text-muted-foreground">{product.features}</p></div>}
+              {product.specifications && <div><h2 className="mb-2 text-lg font-bold">Specifications</h2><p className="whitespace-pre-line text-sm text-muted-foreground">{product.specifications}</p></div>}
+            </div>
+          )}
 
           <div className="mt-auto space-y-6">
             {/* Quantity & Add to Cart */}

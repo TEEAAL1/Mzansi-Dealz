@@ -46,6 +46,20 @@ export const ListProductsResponse = zod.object({
   "isNewArrival": zod.boolean(),
   "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
   "createdAt": zod.string()
 })),
   "total": zod.number()
@@ -76,6 +90,20 @@ export const GetFeaturedProductsResponseItem = zod.object({
   "isNewArrival": zod.boolean(),
   "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
   "createdAt": zod.string()
 })
 export const GetFeaturedProductsResponse = zod.array(GetFeaturedProductsResponseItem)
@@ -105,6 +133,20 @@ export const GetNewArrivalsResponseItem = zod.object({
   "isNewArrival": zod.boolean(),
   "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
   "createdAt": zod.string()
 })
 export const GetNewArrivalsResponse = zod.array(GetNewArrivalsResponseItem)
@@ -146,6 +188,20 @@ export const GetProductResponse = zod.object({
   "isNewArrival": zod.boolean(),
   "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
   "createdAt": zod.string()
 })
 
@@ -347,6 +403,112 @@ export const CreateProductBody = zod.object({
 
 
 /**
+ * @summary Get the latest PerfectDealz product migration run
+ */
+export const GetLatestProductImportResponse = zod.object({
+  "run": zod.union([zod.object({
+  "id": zod.number(),
+  "sourceDomain": zod.string(),
+  "status": zod.string(),
+  "totalDiscovered": zod.number(),
+  "productsImported": zod.number(),
+  "productsFailed": zod.number(),
+  "missingImages": zod.number(),
+  "missingPrices": zod.number(),
+  "overwriteExisting": zod.boolean(),
+  "skipExisting": zod.boolean(),
+  "importImages": zod.boolean(),
+  "csvPath": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().nullish()
+}),zod.null()]),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "sourceUrl": zod.string(),
+  "sku": zod.string().nullish(),
+  "name": zod.string().nullish(),
+  "status": zod.string(),
+  "error": zod.string().nullish(),
+  "missingImage": zod.boolean(),
+  "missingPrice": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Crawl the authorized PerfectDealz product catalog
+ */
+export const StartProductImportBody = zod.object({
+  "overwriteExisting": zod.boolean().optional(),
+  "skipExisting": zod.boolean().optional(),
+  "importImages": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Get product migration status and preview
+ */
+export const GetProductImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetProductImportResponse = zod.object({
+  "run": zod.union([zod.object({
+  "id": zod.number(),
+  "sourceDomain": zod.string(),
+  "status": zod.string(),
+  "totalDiscovered": zod.number(),
+  "productsImported": zod.number(),
+  "productsFailed": zod.number(),
+  "missingImages": zod.number(),
+  "missingPrices": zod.number(),
+  "overwriteExisting": zod.boolean(),
+  "skipExisting": zod.boolean(),
+  "importImages": zod.boolean(),
+  "csvPath": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().nullish()
+}),zod.null()]),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "sourceUrl": zod.string(),
+  "sku": zod.string().nullish(),
+  "name": zod.string().nullish(),
+  "status": zod.string(),
+  "error": zod.string().nullish(),
+  "missingImage": zod.boolean(),
+  "missingPrice": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Import the previewed product migration CSV
+ */
+export const ImportProductRunParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Roll back an imported product migration
+ */
+export const RollbackProductImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Download the product migration CSV
+ */
+export const DownloadProductImportCsvParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Create a category
  */
 export const CreateCategoryBody = zod.object({
@@ -396,6 +558,20 @@ export const UpdateProductResponse = zod.object({
   "isNewArrival": zod.boolean(),
   "onSale": zod.boolean(),
   "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
   "createdAt": zod.string()
 })
 

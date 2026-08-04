@@ -389,6 +389,126 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/product-import/latest:
+    get:
+      operationId: getLatestProductImport
+      tags: [admin]
+      summary: Get the latest PerfectDealz product migration run
+      responses:
+        "200":
+          description: Latest import run and preview items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportStatusResponse"
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/start:
+    post:
+      operationId: startProductImport
+      tags: [admin]
+      summary: Crawl the authorized PerfectDealz product catalog
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductImportOptions"
+      responses:
+        "202":
+          description: Crawl started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportStartResponse"
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/{id}:
+    get:
+      operationId: getProductImport
+      tags: [admin]
+      summary: Get product migration status and preview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Import run and items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportStatusResponse"
+        "404":
+          description: Import not found
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/{id}/import:
+    post:
+      operationId: importProductRun
+      tags: [admin]
+      summary: Import the previewed product migration CSV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "202":
+          description: Import started
+        "409":
+          description: Run is not ready
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/{id}/rollback:
+    post:
+      operationId: rollbackProductImport
+      tags: [admin]
+      summary: Roll back an imported product migration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Import rolled back
+        "409":
+          description: Run cannot be rolled back
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/{id}/csv:
+    get:
+      operationId: downloadProductImportCsv
+      tags: [admin]
+      summary: Download the product migration CSV
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product migration CSV
+          content:
+            text/csv:
+              schema:
+                type: string
+        "404":
+          description: Import not found
+        "401":
+          description: Unauthorized
+
   /admin/categories:
     post:
       operationId: createCategory
@@ -671,6 +791,34 @@ components:
           type: boolean
         tags:
           type: ["string", "null"]
+        categorySlug:
+          type: string
+        sku:
+          type: ["string", "null"]
+        brand:
+          type: ["string", "null"]
+        specifications:
+          type: ["string", "null"]
+        features:
+          type: ["string", "null"]
+        galleryImages:
+          type: ["string", "null"]
+        stockStatus:
+          type: ["string", "null"]
+        weight:
+          type: ["string", "null"]
+        dimensions:
+          type: ["string", "null"]
+        variants:
+          type: ["string", "null"]
+        metaTitle:
+          type: ["string", "null"]
+        metaDescription:
+          type: ["string", "null"]
+        searchKeywords:
+          type: ["string", "null"]
+        status:
+          type: string
         createdAt:
           type: string
 
@@ -949,6 +1097,94 @@ components:
         onSale:
           type: boolean
         tags:
+          type: string
+
+    ProductImportOptions:
+      type: object
+      properties:
+        overwriteExisting:
+          type: boolean
+        skipExisting:
+          type: boolean
+        importImages:
+          type: boolean
+
+    ProductImportRun:
+      type: object
+      required: [id, sourceDomain, status, totalDiscovered, productsImported, productsFailed, missingImages, missingPrices, overwriteExisting, skipExisting, importImages, createdAt]
+      properties:
+        id:
+          type: integer
+        sourceDomain:
+          type: string
+        status:
+          type: string
+        totalDiscovered:
+          type: integer
+        productsImported:
+          type: integer
+        productsFailed:
+          type: integer
+        missingImages:
+          type: integer
+        missingPrices:
+          type: integer
+        overwriteExisting:
+          type: boolean
+        skipExisting:
+          type: boolean
+        importImages:
+          type: boolean
+        csvPath:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        completedAt:
+          type: ["string", "null"]
+
+    ProductImportItem:
+      type: object
+      required: [id, sourceUrl, status, missingImage, missingPrice]
+      properties:
+        id:
+          type: integer
+        sourceUrl:
+          type: string
+        sku:
+          type: ["string", "null"]
+        name:
+          type: ["string", "null"]
+        status:
+          type: string
+        error:
+          type: ["string", "null"]
+        missingImage:
+          type: boolean
+        missingPrice:
+          type: boolean
+
+    ProductImportStatusResponse:
+      type: object
+      required: [run, items]
+      properties:
+        run:
+          anyOf:
+            - $ref: "#/components/schemas/ProductImportRun"
+            - type: "null"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductImportItem"
+
+    ProductImportStartResponse:
+      type: object
+      required: [run, message]
+      properties:
+        run:
+          $ref: "#/components/schemas/ProductImportRun"
+        message:
           type: string
 
     CreateCategoryRequest:

@@ -42,6 +42,9 @@ import type {
   OrderDetail,
   PaymentSettingsInput,
   Product,
+  ProductImportOptions,
+  ProductImportStartResponse,
+  ProductImportStatusResponse,
   ProductList,
   ProductStats,
   RefundAdminPaymentBody,
@@ -1446,6 +1449,448 @@ export const useCreateProduct = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateProductMutationOptions(options));
     }
+
+export const getGetLatestProductImportUrl = () => {
+
+
+
+
+  return `/api/admin/product-import/latest`
+}
+
+/**
+ * @summary Get the latest PerfectDealz product migration run
+ */
+export const getLatestProductImport = async ( options?: RequestInit): Promise<ProductImportStatusResponse> => {
+
+  return customFetch<ProductImportStatusResponse>(getGetLatestProductImportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLatestProductImportQueryKey = () => {
+    return [
+    `/api/admin/product-import/latest`
+    ] as const;
+    }
+
+
+export const getGetLatestProductImportQueryOptions = <TData = Awaited<ReturnType<typeof getLatestProductImport>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestProductImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLatestProductImportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLatestProductImport>>> = ({ signal }) => getLatestProductImport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLatestProductImport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLatestProductImportQueryResult = NonNullable<Awaited<ReturnType<typeof getLatestProductImport>>>
+export type GetLatestProductImportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the latest PerfectDealz product migration run
+ */
+
+export function useGetLatestProductImport<TData = Awaited<ReturnType<typeof getLatestProductImport>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLatestProductImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLatestProductImportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getStartProductImportUrl = () => {
+
+
+
+
+  return `/api/admin/product-import/start`
+}
+
+/**
+ * @summary Crawl the authorized PerfectDealz product catalog
+ */
+export const startProductImport = async (productImportOptions?: ProductImportOptions, options?: RequestInit): Promise<ProductImportStartResponse> => {
+
+  return customFetch<ProductImportStartResponse>(getStartProductImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      productImportOptions,)
+  }
+);}
+
+
+
+
+export const getStartProductImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startProductImport>>, TError,{data?: BodyType<ProductImportOptions>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startProductImport>>, TError,{data?: BodyType<ProductImportOptions>}, TContext> => {
+
+const mutationKey = ['startProductImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startProductImport>>, {data?: BodyType<ProductImportOptions>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startProductImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartProductImportMutationResult = NonNullable<Awaited<ReturnType<typeof startProductImport>>>
+    export type StartProductImportMutationBody = BodyType<ProductImportOptions> | undefined
+    export type StartProductImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Crawl the authorized PerfectDealz product catalog
+ */
+export const useStartProductImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startProductImport>>, TError,{data?: BodyType<ProductImportOptions>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startProductImport>>,
+        TError,
+        {data?: BodyType<ProductImportOptions>},
+        TContext
+      > => {
+      return useMutation(getStartProductImportMutationOptions(options));
+    }
+
+export const getGetProductImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}`
+}
+
+/**
+ * @summary Get product migration status and preview
+ */
+export const getProductImport = async (id: number, options?: RequestInit): Promise<ProductImportStatusResponse> => {
+
+  return customFetch<ProductImportStatusResponse>(getGetProductImportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductImportQueryKey = (id: number,) => {
+    return [
+    `/api/admin/product-import/${id}`
+    ] as const;
+    }
+
+
+export const getGetProductImportQueryOptions = <TData = Awaited<ReturnType<typeof getProductImport>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductImportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductImport>>> = ({ signal }) => getProductImport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductImport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductImportQueryResult = NonNullable<Awaited<ReturnType<typeof getProductImport>>>
+export type GetProductImportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get product migration status and preview
+ */
+
+export function useGetProductImport<TData = Awaited<ReturnType<typeof getProductImport>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductImportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getImportProductRunUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}/import`
+}
+
+/**
+ * @summary Import the previewed product migration CSV
+ */
+export const importProductRun = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getImportProductRunUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getImportProductRunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importProductRun>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importProductRun>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['importProductRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importProductRun>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  importProductRun(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportProductRunMutationResult = NonNullable<Awaited<ReturnType<typeof importProductRun>>>
+
+    export type ImportProductRunMutationError = ErrorType<void>
+
+    /**
+ * @summary Import the previewed product migration CSV
+ */
+export const useImportProductRun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importProductRun>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importProductRun>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getImportProductRunMutationOptions(options));
+    }
+
+export const getRollbackProductImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}/rollback`
+}
+
+/**
+ * @summary Roll back an imported product migration
+ */
+export const rollbackProductImport = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRollbackProductImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRollbackProductImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rollbackProductImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rollbackProductImport>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rollbackProductImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rollbackProductImport>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rollbackProductImport(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RollbackProductImportMutationResult = NonNullable<Awaited<ReturnType<typeof rollbackProductImport>>>
+
+    export type RollbackProductImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Roll back an imported product migration
+ */
+export const useRollbackProductImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rollbackProductImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rollbackProductImport>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRollbackProductImportMutationOptions(options));
+    }
+
+export const getDownloadProductImportCsvUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}/csv`
+}
+
+/**
+ * @summary Download the product migration CSV
+ */
+export const downloadProductImportCsv = async (id: number, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getDownloadProductImportCsvUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadProductImportCsvQueryKey = (id: number,) => {
+    return [
+    `/api/admin/product-import/${id}/csv`
+    ] as const;
+    }
+
+
+export const getDownloadProductImportCsvQueryOptions = <TData = Awaited<ReturnType<typeof downloadProductImportCsv>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadProductImportCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadProductImportCsvQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadProductImportCsv>>> = ({ signal }) => downloadProductImportCsv(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadProductImportCsv>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadProductImportCsvQueryResult = NonNullable<Awaited<ReturnType<typeof downloadProductImportCsv>>>
+export type DownloadProductImportCsvQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download the product migration CSV
+ */
+
+export function useDownloadProductImportCsv<TData = Awaited<ReturnType<typeof downloadProductImportCsv>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadProductImportCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadProductImportCsvQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getCreateCategoryUrl = () => {
 

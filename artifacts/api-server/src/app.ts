@@ -87,6 +87,7 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 app.use("/api", router);
 
 app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static("public/uploads"));
 
 // Catch-all 404 — return JSON, never HTML
 app.use((req: Request, res: Response) => {
