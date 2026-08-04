@@ -1,8 +1,9 @@
 {
   "rewrites": [
+    { "source": "/api/:path*", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/api/:path*" },
+    { "source": "/uploads/:path*", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/uploads/:path*" },
     { "source": "/admin/:path*", "destination": "/index.html" },
     { "source": "/admin", "destination": "/index.html" },
-    { "source": "/uploads/:path*", "destination": "/uploads/:path*" },
     { "source": "/shop/:path*", "destination": "/index.html" },
     { "source": "/product/:path*", "destination": "/index.html" },
     { "source": "/order-confirmation/:path*", "destination": "/index.html" },

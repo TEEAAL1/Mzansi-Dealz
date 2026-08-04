@@ -11,18 +11,10 @@
 declare const VITE_API_BASE_URL: string | undefined;
 const apiBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
 
-const isMzansiDealzCustomDomain =
-  typeof window !== "undefined" &&
-  /(^|\.)mzansidealz\.com$/i.test(window.location.hostname);
-
-const publishedApiFallback = isMzansiDealzCustomDomain
-  ? "https://mzansi-dealz--mrmoyothabani.replit.app"
-  : undefined;
-
 export const API_BASE_URL: string | undefined =
   typeof apiBaseUrl === "string" && apiBaseUrl.trim().length > 0
     ? apiBaseUrl.trim().replace(/\/$/, "")
-    : publishedApiFallback;
+    : undefined;
 
 /**
  * Prepends the configured API base URL to a relative path when needed.
