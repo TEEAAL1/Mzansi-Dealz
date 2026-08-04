@@ -1,0 +1,89 @@
+You are a senior full-stack security engineer.
+
+The application is now returning "Unauthorized" when creating products.
+
+Your task is to identify and fix the root cause without changing the intended security model.
+
+Requirements:
+
+1. Diagnose the Unauthorized error.
+- Determine whether it is caused by:
+  - Missing JWT token
+  - Invalid token
+  - Expired session
+  - Missing Authorization header
+  - Incorrect cookie configuration
+  - Admin middleware
+  - CORS
+  - CSRF protection
+  - Session storage
+  - Route permissions
+
+2. Verify the authentication flow.
+- Login must generate a valid authenticated session.
+- Ensure the session/token is stored correctly.
+- Ensure it persists after page refresh.
+- Ensure every protected API request automatically includes authentication.
+
+3. Fix protected routes.
+The following must require admin authentication:
+- Create Product
+- Edit Product
+- Delete Product
+- Upload Images
+- Create Categories
+- Delete Categories
+- View Orders
+- Admin Dashboard
+
+Public users must NOT access these endpoints.
+
+4. Verify middleware.
+Inspect all authentication middleware and authorization guards.
+Remove duplicate checks or conflicting middleware.
+Return proper JSON responses for unauthorized requests.
+
+5. Security improvements.
+Implement:
+- Secure HTTP-only authentication cookies (if using cookies)
+- Token expiration
+- Logout endpoint
+- Rate limiting on login
+- Password hashing (bcrypt/argon2)
+- Input validation
+- SQL injection protection
+- XSS protection
+- CSRF protection where applicable
+- Helmet security headers
+- CORS configured only for approved domains
+- Environment variable validation
+- Error responses that never expose stack traces
+
+6. Frontend.
+Ensure every authenticated request automatically sends the correct credentials.
+Do not require manual token handling by the user.
+
+7. Testing.
+Perform an end-to-end test:
+
+Admin Login
+→ Dashboard
+→ Create Category
+→ Upload Image
+→ Create Product
+→ Edit Product
+→ Delete Product
+→ Logout
+
+Confirm every protected action succeeds while authenticated and fails when unauthenticated.
+
+8. Deployment.
+Commit all fixes.
+Push to GitHub.
+Verify the production deployment works.
+
+Finally provide:
+- Root cause of the Unauthorized error.
+- Files modified.
+- Security improvements implemented.
+- Confirmation that admin operations work in production.
