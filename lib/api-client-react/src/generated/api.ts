@@ -49,7 +49,8 @@ import type {
   ProductStats,
   RefundAdminPaymentBody,
   RetryCheckoutInput,
-  UpdateOrderStatusRequest
+  UpdateOrderStatusRequest,
+  UploadProductImportCsvBody
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1596,6 +1597,88 @@ export const useStartProductImport = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getStartProductImportMutationOptions(options));
+    }
+
+export const getUploadProductImportCsvUrl = () => {
+
+
+
+
+  return `/api/admin/product-import/upload-csv`
+}
+
+/**
+ * @summary Upload an authorized product CSV for active catalogue import
+ */
+export const uploadProductImportCsv = async (uploadProductImportCsvBody: UploadProductImportCsvBody, options?: RequestInit): Promise<ProductImportStartResponse> => {
+    const formData = new FormData();
+formData.append(`file`, uploadProductImportCsvBody.file);
+if(uploadProductImportCsvBody.sourceUrl !== undefined) {
+ formData.append(`sourceUrl`, uploadProductImportCsvBody.sourceUrl);
+ }
+if(uploadProductImportCsvBody.overwriteExisting !== undefined) {
+ formData.append(`overwriteExisting`, uploadProductImportCsvBody.overwriteExisting.toString())
+ }
+if(uploadProductImportCsvBody.importImages !== undefined) {
+ formData.append(`importImages`, uploadProductImportCsvBody.importImages.toString())
+ }
+
+  return customFetch<ProductImportStartResponse>(getUploadProductImportCsvUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadProductImportCsvMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadProductImportCsv>>, TError,{data: BodyType<UploadProductImportCsvBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadProductImportCsv>>, TError,{data: BodyType<UploadProductImportCsvBody>}, TContext> => {
+
+const mutationKey = ['uploadProductImportCsv'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadProductImportCsv>>, {data: BodyType<UploadProductImportCsvBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadProductImportCsv(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadProductImportCsvMutationResult = NonNullable<Awaited<ReturnType<typeof uploadProductImportCsv>>>
+    export type UploadProductImportCsvMutationBody = BodyType<UploadProductImportCsvBody>
+    export type UploadProductImportCsvMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload an authorized product CSV for active catalogue import
+ */
+export const useUploadProductImportCsv = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadProductImportCsv>>, TError,{data: BodyType<UploadProductImportCsvBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadProductImportCsv>>,
+        TError,
+        {data: BodyType<UploadProductImportCsvBody>},
+        TContext
+      > => {
+      return useMutation(getUploadProductImportCsvMutationOptions(options));
     }
 
 export const getGetProductImportUrl = (id: number,) => {

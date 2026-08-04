@@ -448,6 +448,17 @@ export const StartProductImportBody = zod.object({
 
 
 /**
+ * @summary Upload an authorized product CSV for active catalogue import
+ */
+export const UploadProductImportCsvBody = zod.object({
+  "file": zod.string().describe('CSV file uploaded as multipart form data'),
+  "sourceUrl": zod.string().url().optional(),
+  "overwriteExisting": zod.boolean().optional(),
+  "importImages": zod.boolean().optional()
+})
+
+
+/**
  * @summary Get product migration status and preview
  */
 export const GetProductImportParams = zod.object({

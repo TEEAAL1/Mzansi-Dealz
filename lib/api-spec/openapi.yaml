@@ -425,6 +425,41 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/product-import/upload-csv:
+    post:
+      operationId: uploadProductImportCsv
+      tags: [admin]
+      summary: Upload an authorized product CSV for active catalogue import
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  description: CSV file uploaded as multipart form data
+                sourceUrl:
+                  type: string
+                  format: uri
+                overwriteExisting:
+                  type: boolean
+                importImages:
+                  type: boolean
+      responses:
+        "202":
+          description: CSV accepted and preview preparation started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportStartResponse"
+        "400":
+          description: Invalid CSV or upload
+        "401":
+          description: Unauthorized
+
   /admin/product-import/{id}:
     get:
       operationId: getProductImport

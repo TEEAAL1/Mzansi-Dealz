@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { and, eq, sql } from "drizzle-orm";
+import multer from "multer";
 import { db, productImportItemsTable, productImportRunsTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/admin-auth";
 import {
@@ -10,9 +11,15 @@ import {
   getLatestImportRun,
   normalizeSourceOrigin,
   finalizeCrawlRun,
+  createCsvImportRun,
+  validateProductCsv,
 } from "../services/productImportService";
 
 const router = Router();
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
 
 router.get("/admin/product-import/latest", requireAdmin, async (_req, res): Promise<void> => {
   const [run] = await getLatestImportRun();
@@ -103,6 +110,44 @@ router.post("/admin/product-import/start", requireAdmin, async (req, res): Promi
       completedAt: null,
     },
     message: "Product crawl started. Poll the import status for progress.",
+  });
+});
+
+router.post("/admin/product-import/upload-csv", requireAdmin, (req, res): void => {
+  csvUpload.single("file")(req, res, async (error) => {
+    if (error) {
+      res.status(400).json({ error: error instanceof multer.MulterError && error.code === "LIMIT_FILE_SIZE" ? "CSV file must be smaller than 25 MB." : error.message });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: "Choose a CSV file to upload." });
+      return;
+    }
+    if (!req.file.originalname.toLowerCase().endsWith(".csv") && !req.file.mimetype.includes("csv") && req.file.mimetype !== "text/plain") {
+      res.status(400).json({ error: "Only CSV files are supported." });
+      return;
+    }
+    try {
+      const text = req.file.buffer.toString("utf8");
+      const validation = validateProductCsv(text);
+      let sourceUrl: string | undefined;
+      if (req.body.sourceUrl?.trim()) {
+        sourceUrl = normalizeSourceOrigin(req.body.sourceUrl.trim());
+      }
+      const run = await createCsvImportRun(text, {
+        sourceUrl,
+        filename: req.file.originalname,
+        overwriteExisting: req.body.overwriteExisting === "true",
+        skipExisting: req.body.overwriteExisting !== "true",
+        importImages: req.body.importImages !== "false",
+      });
+      res.status(202).json({
+        run: { ...run, createdAt: run.createdAt.toISOString(), completedAt: null },
+        message: `CSV accepted. Preparing ${validation.rowCount.toLocaleString()} product rows.`,
+      });
+    } catch (uploadError) {
+      res.status(400).json({ error: uploadError instanceof Error ? uploadError.message : "CSV could not be prepared." });
+    }
   });
 });
 

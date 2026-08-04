@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  apiUrl,
   downloadProductImportCsv,
   getDownloadProductImportCsvUrl,
   getGetLatestProductImportQueryKey,
@@ -12,7 +13,7 @@ import {
   useStartProductImport,
 } from "@workspace/api-client-react";
 import type { ProductImportItem } from "@workspace/api-client-react";
-import { AlertCircle, ArchiveRestore, CheckCircle2, CircleHelp, Download, FileSpreadsheet, ImageOff, Loader2, PackageCheck, PackageX, Play, RefreshCw, Search, ShieldCheck, Tag, X } from "lucide-react";
+import { AlertCircle, ArchiveRestore, CheckCircle2, CircleHelp, Download, FileSpreadsheet, ImageOff, Loader2, PackageCheck, PackageX, Play, RefreshCw, Search, ShieldCheck, Tag, Upload, X } from "lucide-react";
 import { useAdminHeaders } from "@/hooks/use-admin";
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -84,6 +85,8 @@ export default function AdminProductImport() {
   const [importImages, setImportImages] = useState(true);
   const [sourceUrl, setSourceUrl] = useState(DEFAULT_SOURCE_URL);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const latestQuery = useGetLatestProductImport({
     request: { headers },
@@ -138,6 +141,37 @@ export default function AdminProductImport() {
       },
       onError: () => toast({ title: "Could not start crawl", description: "Check the source and try again.", variant: "destructive" }),
     });
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({ title: "Choose a CSV first", description: "Select your product CSV, then upload it for preview.", variant: "destructive" });
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("sourceUrl", sourceUrl.trim());
+      formData.append("overwriteExisting", String(overwriteExisting));
+      formData.append("importImages", String(importImages));
+      const response = await fetch(apiUrl("/api/admin/product-import/upload-csv"), {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: formData,
+      });
+      const payload = await response.json() as { run?: { id: number }; message?: string; error?: string };
+      if (!response.ok || !payload.run) throw new Error(payload.error || "CSV upload failed.");
+      setSelectedRunId(payload.run.id);
+      setSelectedFile(null);
+      toast({ title: "CSV uploaded", description: payload.message || "Your active product preview is being prepared." });
+      refreshImport();
+    } catch (error) {
+      toast({ title: "CSV upload failed", description: error instanceof Error ? error.message : "The CSV could not be uploaded.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleImport = () => {
@@ -201,7 +235,7 @@ export default function AdminProductImport() {
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><FileSpreadsheet className="h-4 w-4" />Catalogue operations</div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl" data-testid="text-page-title">Import products</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Bring a catalogue you own or have permission to migrate into MzansiDealz in two deliberate steps: crawl first, inspect the CSV, then import.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Bring a catalogue you own or have permission to migrate into MzansiDealz. Upload a CSV for the fastest path, or crawl a live store, review the preview, then import.</p>
         </div>
         {run && <div className="flex items-center gap-3 text-sm text-slate-500" data-testid="text-last-run"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTone(run.status)}`} data-testid="status-import-run">{statusLabel(run.status)}</span><span>Run #{run.id}</span></div>}
       </header>
@@ -222,7 +256,7 @@ export default function AdminProductImport() {
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <Card className="border-slate-200/80 shadow-sm" data-testid="card-import-controls">
-          <CardHeader className="border-b border-slate-100 pb-4"><CardTitle className="flex items-center gap-2 text-base"><Play className="h-4 w-4 text-primary" />Crawl and preview</CardTitle><p className="text-sm font-normal text-slate-500">Start a fresh crawl, then review the sample before changing your store.</p></CardHeader>
+          <CardHeader className="border-b border-slate-100 pb-4"><CardTitle className="flex items-center gap-2 text-base"><Upload className="h-4 w-4 text-primary" />Upload or crawl catalogue</CardTitle><p className="text-sm font-normal text-slate-500">CSV uploads are prepared for preview and import as active products by default.</p></CardHeader>
           <CardContent className="space-y-6 p-5">
             <div className="space-y-2">
               <Label htmlFor="source-url">Source URL</Label>
@@ -246,8 +280,31 @@ export default function AdminProductImport() {
               <div className="flex items-start gap-3"><div className="rounded-lg bg-slate-100 p-2"><ImageOff className="h-4 w-4 text-slate-600" /></div><div><Label htmlFor="import-images" className="cursor-pointer text-sm">Import product images</Label><p className="mt-0.5 text-xs text-slate-500">Fetch and save source image URLs.</p></div></div>
               <Switch id="import-images" checked={importImages} onCheckedChange={setImportImages} disabled={startImport.isPending || isBusy} data-testid="switch-import-images" />
             </div>
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">Import a CSV directly</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">Required columns: SKU, Name, Price, and the standard catalogue fields. Uploaded products are saved as <strong>active</strong>.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="max-w-[15rem] bg-white text-xs file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-xs file:font-medium"
+                    onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                    disabled={isUploading || isBusy}
+                    data-testid="input-product-csv"
+                  />
+                  <Button onClick={handleUpload} disabled={isUploading || isBusy || !selectedFile} variant="outline" className="shrink-0 gap-2 bg-white" data-testid="button-upload-csv">
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {isUploading ? "Uploading…" : "Upload CSV"}
+                  </Button>
+                </div>
+              </div>
+              {selectedFile && <p className="mt-2 text-xs font-medium text-primary" data-testid="text-selected-csv">Selected: {selectedFile.name}</p>}
+            </div>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleStart} disabled={startImport.isPending || isBusy} className="gap-2" data-testid="button-crawl-preview">{startImport.isPending || isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{isBusy ? "Crawling…" : "Crawl / Preview"}</Button>
+              <Button onClick={handleStart} disabled={startImport.isPending || isBusy || isUploading} className="gap-2" data-testid="button-crawl-preview">{startImport.isPending || isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{isBusy ? "Preparing…" : "Crawl / Preview instead"}</Button>
               {run && <Button variant="outline" onClick={handleDownload} disabled={isDownloading} data-csv-endpoint={getDownloadProductImportCsvUrl(run.id)} data-testid="button-preview-csv"><Download className="mr-2 h-4 w-4" />{isDownloading ? "Preparing CSV…" : "Preview CSV"}</Button>}
             </div>
             {isBusy && <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status" data-testid="status-polling-crawl"><Loader2 className="h-3.5 w-3.5 animate-spin" />Live status is updating every few seconds. You can leave this page open.</div>}

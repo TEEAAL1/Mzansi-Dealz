@@ -22,6 +22,14 @@ export type ProductImportOptions = {
   importImages: boolean;
 };
 
+export type CsvImportOptions = {
+  sourceUrl?: string;
+  overwriteExisting: boolean;
+  skipExisting: boolean;
+  importImages: boolean;
+  filename: string;
+};
+
 type ShopifyImage = { src?: string; alt?: string; id?: number };
 type ShopifyVariant = {
   id?: number;
@@ -451,6 +459,187 @@ function toCsv(products: NormalizedProduct[]): string {
       product.featured,
     ].map(csvEscape).join(",")),
   ].join("\n");
+}
+
+const CSV_COLUMNS = ["SKU", "Name", "Description", "Category", "Brand", "Price", "SalePrice", "Stock", "Image", "GalleryImages", "Weight", "Dimensions", "Tags", "Status", "Featured"] as const;
+
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  const input = text.replace(/^\uFEFF/, "");
+  for (let index = 0; index < input.length; index++) {
+    const character = input[index];
+    const next = input[index + 1];
+    if (quoted) {
+      if (character === "\"" && next === "\"") {
+        field += "\"";
+        index++;
+      } else if (character === "\"") {
+        quoted = false;
+      } else {
+        field += character;
+      }
+    } else if (character === "\"") {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(field);
+      field = "";
+    } else if (character === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else if (character !== "\r") {
+      field += character;
+    }
+  }
+  if (field || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows.filter((candidate) => candidate.some((value) => value.trim()));
+}
+
+function parseBoolean(value: string): boolean {
+  return ["true", "1", "yes", "y", "active", "featured"].includes(value.trim().toLowerCase());
+}
+
+function normalizeCsvStock(value: string): string {
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (["in_stock", "instock", "available", "true", "yes", "active"].includes(normalized)) return "in_stock";
+  return "out_of_stock";
+}
+
+function normalizeCsvImage(value: string): string | null {
+  const image = value.trim();
+  return image || null;
+}
+
+function csvRowToProduct(row: Record<string, string>, sourceUrl: string): NormalizedProduct {
+  const name = row.Name.trim();
+  const sku = safeSku(row.SKU || `CSV-${createHash("sha1").update(`${name}|${sourceUrl}`).digest("hex").slice(0, 10)}`);
+  const price = parseMoney(row.Price);
+  const salePrice = parseMoney(row.SalePrice);
+  const image = normalizeCsvImage(row.Image);
+  const galleryImages = unique((row.GalleryImages || image || "").split("|").map((value) => value.trim()).filter(Boolean));
+  const category = row.Category.trim() || "Uncategorised";
+  const brand = row.Brand.trim() || "Mzansi Dealz";
+  const description = cleanHtml(row.Description);
+  const tags = row.Tags.split("|").map((tag) => tag.trim()).filter(Boolean);
+  const slug = slugify(name || sku);
+  const source = row.SourceUrl?.trim() || sourceUrl;
+  return {
+    sku,
+    name,
+    description,
+    category,
+    brand,
+    price,
+    originalPrice: price,
+    salePrice: salePrice !== null && price !== null && salePrice < price ? salePrice : null,
+    stock: normalizeCsvStock(row.Stock),
+    image,
+    galleryImages,
+    weight: row.Weight.trim(),
+    dimensions: row.Dimensions.trim(),
+    tags,
+    status: "active",
+    featured: parseBoolean(row.Featured),
+    specifications: "",
+    features: "",
+    variants: [],
+    sourceUrl: source,
+    slug,
+    metaTitle: `${name} | Mzansi Dealz`.slice(0, 60),
+    metaDescription: (description || `${name} from ${brand}.`).slice(0, 155),
+    searchKeywords: unique([name, brand, category, ...tags].flatMap((value) => value.split(/[\s,]+/))).filter(Boolean),
+    imagePaths: galleryImages.filter((value) => value.startsWith("/uploads/")),
+    validation: [
+      !name ? "Missing product name" : "",
+      price === null ? "Missing price" : "",
+      !image ? "Missing images" : "",
+    ].filter(Boolean),
+  };
+}
+
+function validateCsvHeader(header: string[]): void {
+  const normalized = header.map((value) => value.trim());
+  const missing = CSV_COLUMNS.filter((column) => !normalized.includes(column));
+  if (missing.length) throw new Error(`CSV is missing required columns: ${missing.join(", ")}`);
+}
+
+export function validateProductCsv(text: string): { headers: string[]; rowCount: number } {
+  const rows = parseCsv(text);
+  const headers = rows[0]?.map((value) => value.trim()) ?? [];
+  validateCsvHeader(headers);
+  return { headers, rowCount: Math.max(0, rows.length - 1) };
+}
+
+export async function createCsvImportRun(text: string, options: CsvImportOptions) {
+  const { headers } = validateProductCsv(text);
+  await db.update(productImportRunsTable)
+    .set({ status: "failed", error: "Superseded by a newer import run.", completedAt: new Date() })
+    .where(sql`${productImportRunsTable.status} IN ('crawling', 'importing')`);
+  const [run] = await db.insert(productImportRunsTable).values({
+    sourceDomain: options.sourceUrl || `CSV upload: ${options.filename}`,
+    overwriteExisting: options.overwriteExisting,
+    skipExisting: options.skipExisting,
+    importImages: options.importImages,
+    status: "crawling",
+  }).returning();
+  void processCsvImportRun(run.id, text, headers, options.sourceUrl);
+  return run;
+}
+
+async function processCsvImportRun(runId: number, text: string, headers: string[], sourceUrl?: string): Promise<void> {
+  try {
+    const rows = parseCsv(text).slice(1);
+    const seen = new Set<string>();
+    const products: NormalizedProduct[] = [];
+    for (const values of rows) {
+      const row = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])) as Record<string, string>;
+      const product = csvRowToProduct(row, sourceUrl || `csv://upload/${runId}`);
+      if (!row.SourceUrl?.trim()) {
+        product.sourceUrl = `csv://upload/${runId}/${product.sku}`;
+      }
+      const key = product.sku || product.name.toLowerCase();
+      if (!product.name || seen.has(key)) continue;
+      seen.add(key);
+      products.push(product);
+    }
+    await db.update(productImportRunsTable).set({ totalDiscovered: products.length }).where(eq(productImportRunsTable.id, runId));
+    for (let index = 0; index < products.length; index += 250) {
+      const batch = products.slice(index, index + 250);
+      await db.insert(productImportItemsTable).values(batch.map((product) => ({
+        runId,
+        sourceUrl: product.sourceUrl,
+        sku: product.sku,
+        name: product.name,
+        payload: product,
+        status: product.validation.length ? "warning" : "ready",
+        missingImage: !product.image,
+        missingPrice: product.price === null,
+      })));
+    }
+    const report = await writeRunCsv(runId);
+    await db.update(productImportRunsTable).set({
+      status: "ready",
+      productsFailed: report.failed,
+      missingImages: report.missingImages,
+      missingPrices: report.missingPrices,
+      csvPath: report.csvPath,
+      completedAt: new Date(),
+    }).where(eq(productImportRunsTable.id, runId));
+  } catch (error) {
+    logger.error({ err: error, runId }, "CSV product import preparation failed");
+    await db.update(productImportRunsTable).set({
+      status: "failed",
+      error: error instanceof Error ? error.message : "CSV import preparation failed",
+      completedAt: new Date(),
+    }).where(eq(productImportRunsTable.id, runId));
+  }
 }
 
 async function downloadImage(url: string, sku: string, index: number, sourceOrigin: string): Promise<string> {

@@ -442,6 +442,14 @@ export type RefundAdminPaymentBody = {
   amount?: number;
 };
 
+export type UploadProductImportCsvBody = {
+  /** CSV file uploaded as multipart form data */
+  file: string;
+  sourceUrl?: string;
+  overwriteExisting?: boolean;
+  importImages?: boolean;
+};
+
 export type DownloadInvoiceParams = {
 email: string;
 };
