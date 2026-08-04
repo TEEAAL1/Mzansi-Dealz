@@ -8,3 +8,9 @@ Admin authentication is intentionally cookie-based: the browser receives an HTTP
 **Why:** The previous password-as-token flow stored the admin password in localStorage and caused protected product saves to fail when the token was missing or stale.
 
 **How to apply:** Keep all admin writes behind `requireAdmin`, preserve the CSRF check for POST/PUT/PATCH/DELETE, and configure production CORS origins so the published frontend domain is approved.
+
+Published Replit domains may be injected without a protocol, while browsers send full `Origin` values. Normalize configured domains to both `https://` and `http://` before CORS comparison.
+
+**Why:** Without normalization, the admin page reported a misleading API-network error because the production preflight returned `500 Origin is not allowed`.
+
+**How to apply:** Test the actual published `/api/admin/login` preflight and login request after every deployment/auth or origin configuration change.
