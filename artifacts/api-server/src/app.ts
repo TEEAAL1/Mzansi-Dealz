@@ -1,4 +1,5 @@
 import express, { type Express, type Request, type Response, type NextFunction } from "express";
+import { Readable } from "node:stream";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -6,6 +7,7 @@ import pinoHttp from "pino-http";
 import timeout from "connect-timeout";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { getPublicObjectResponse, hasPublicObjectStorage } from "./lib/public-object-storage";
 
 const app: Express = express();
 
@@ -85,6 +87,35 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 });
 
 app.use("/api", router);
+
+app.get("/uploads/products/*path", async (req: Request, res: Response, next: NextFunction) => {
+  if (!hasPublicObjectStorage()) {
+    next();
+    return;
+  }
+  const rawPath = req.params.path;
+  const filePath = `uploads/products/${Array.isArray(rawPath) ? rawPath.join("/") : rawPath}`;
+  try {
+    const response = await getPublicObjectResponse(filePath);
+    if (!response) {
+      next();
+      return;
+    }
+    response.headers.forEach((value, key) => {
+      if (["content-type", "content-length", "cache-control", "etag"].includes(key)) {
+        res.setHeader(key, value);
+      }
+    });
+    if (response.body) {
+      Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
+    } else {
+      res.end();
+    }
+  } catch (error) {
+    logger.warn({ err: error, filePath }, "Public product image lookup failed");
+    next();
+  }
+});
 
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads", express.static("public/uploads"));

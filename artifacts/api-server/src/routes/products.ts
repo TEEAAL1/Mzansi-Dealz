@@ -10,6 +10,18 @@ import {
 
 const router = Router();
 
+function normalizeImageUrl(value: string): string {
+  try {
+    const parsed = new URL(value);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+  } catch {
+    // Relative image paths are already suitable for the public app.
+  }
+  return value;
+}
+
 function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: string) {
   const categorySlug = categoryName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return {
@@ -23,7 +35,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     categoryId: p.categoryId,
     categoryName,
     categorySlug,
-    imageUrl: p.imageUrl,
+    imageUrl: normalizeImageUrl(p.imageUrl),
     inStock: p.inStock,
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
