@@ -108,6 +108,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
     try {
       const res = await fetch(apiUrl("/api/admin/seed-categories"), {
         method: "POST",
+        credentials: "include",
         headers: { ...headers, "Content-Type": "application/json" },
       });
       if (!res.ok) {

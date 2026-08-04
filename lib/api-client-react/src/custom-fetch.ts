@@ -17,6 +17,8 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+const CSRF_COOKIE = "mzansi_admin_csrf";
+let _csrfToken: string | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +44,23 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+export function getCsrfToken(): string | null {
+  if (_csrfToken) return _csrfToken;
+  if (typeof document === "undefined") return null;
+  const cookie = document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${CSRF_COOKIE}=`));
+  _csrfToken = cookie ? decodeURIComponent(cookie.slice(CSRF_COOKIE.length + 1)) : null;
+  return _csrfToken;
+}
+
+export function setCsrfToken(token: string): void {
+  _csrfToken = token;
+  if (typeof document !== "undefined") {
+    document.cookie = `${CSRF_COOKIE}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
+  }
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -336,6 +355,10 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  const csrfToken = getCsrfToken();
+  if (csrfToken && method !== "GET" && method !== "HEAD") {
+    headers.set("x-csrf-token", csrfToken);
+  }
 
   if (
     typeof init.body === "string" &&
@@ -360,7 +383,12 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, {
+    ...init,
+    method,
+    headers,
+    credentials: init.credentials ?? "include",
+  });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);

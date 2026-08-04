@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, ImageIcon, X } from "lucide-react";
-import { apiUrl } from "@workspace/api-client-react";
+import { apiUrl, getCsrfToken } from "@workspace/api-client-react";
 
 interface ImageUploaderProps {
   value: string;
@@ -28,6 +28,8 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
 
       const res = await fetch(apiUrl("/api/uploads"), {
         method: "POST",
+        credentials: "include",
+        headers: { "x-csrf-token": getCsrfToken() ?? "" },
         body: formData,
       });
 

@@ -60,7 +60,8 @@ export interface AdminLoginRequest {
 }
 
 export interface AdminLoginResponse {
-  token: string;
+  authenticated: boolean;
+  csrfToken: string;
 }
 
 export interface AdminStats {
@@ -105,6 +106,13 @@ export interface CreateProductRequest {
   isNewArrival?: boolean;
   onSale?: boolean;
   tags?: string;
+}
+
+export interface CreateCategoryRequest {
+  name: string;
+  slug: string;
+  icon?: string;
+  description?: string;
 }
 
 export interface CheckoutItem {

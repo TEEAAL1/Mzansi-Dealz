@@ -1,14 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, ShoppingBag, LogOut, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ArrowLeft } from "lucide-react";
 import { useAdminAuth } from "@/hooks/use-admin";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { clearToken } = useAdminAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Products", href: "/products", icon: Package },
+    { name: "Categories", href: "/categories", icon: Tags },
     { name: "Orders", href: "/orders", icon: ShoppingBag },
   ];
 
@@ -42,7 +43,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
           <button 
-            onClick={clearToken}
+            onClick={() => {
+              clearToken();
+              setLocation("/login");
+            }}
             className="flex w-full items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />

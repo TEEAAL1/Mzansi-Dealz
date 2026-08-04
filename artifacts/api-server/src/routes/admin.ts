@@ -1,11 +1,16 @@
-import { Router, type Request, type Response, type NextFunction } from "express";
+import { Router } from "express";
 import { db, productsTable, ordersTable, orderItemsTable, categoriesTable } from "@workspace/db";
 import { eq, desc, sql, count, sum } from "drizzle-orm";
 import { z } from "zod";
+import {
+  createAdminSession,
+  destroyAdminSession,
+  hasAdminSession,
+  requireAdmin,
+  verifyAdminPassword,
+} from "../middlewares/admin-auth";
 
 const router = Router();
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "MzansiDealz@2024";
 
 const DEFAULT_CATEGORIES = [
   { name: "Electronics", slug: "electronics", icon: "Cpu", description: "Gadgets, tech, audio & accessories" },
@@ -19,23 +24,46 @@ const DEFAULT_CATEGORIES = [
   { name: "Gifts & Accessories", slug: "gifts-accessories", icon: "Gift", description: "Gift ideas, jewellery, watches & accessories" },
 ];
 
-function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  const auth = req.headers["x-admin-token"] as string | undefined;
-  if (!auth || auth !== ADMIN_PASSWORD) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 10;
+
+function loginIsRateLimited(ip: string) {
+  const now = Date.now();
+  const current = loginAttempts.get(ip);
+  if (!current || current.resetAt <= now) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return false;
   }
-  next();
+  current.count += 1;
+  return current.count > LOGIN_MAX_ATTEMPTS;
 }
 
 // POST /admin/login
-router.post("/admin/login", (req, res) => {
+router.post("/admin/login", async (req, res) => {
+  if (loginIsRateLimited(req.ip ?? "unknown")) {
+    res.status(429).json({ error: "Too many login attempts. Try again later." });
+    return;
+  }
   const { password } = req.body as { password?: string };
-  if (!password || password !== ADMIN_PASSWORD) {
+  if (!password || !(await verifyAdminPassword(password))) {
     res.status(401).json({ error: "Invalid password" });
     return;
   }
-  res.json({ token: ADMIN_PASSWORD });
+  const csrfToken = createAdminSession(res);
+  res.json({ authenticated: true, csrfToken });
+});
+
+router.get("/admin/session", (req, res) => {
+  res.json({
+    authenticated: hasAdminSession(req),
+    csrfToken: hasAdminSession(req) ? req.cookies?.mzansi_admin_csrf : undefined,
+  });
+});
+
+router.post("/admin/logout", requireAdmin, (req, res) => {
+  destroyAdminSession(req, res);
+  res.json({ authenticated: false });
 });
 
 // GET /admin/stats
@@ -352,6 +380,60 @@ router.post("/admin/seed-categories", requireAdmin, async (req, res) => {
     .returning();
 
   res.status(201).json({ created: created.length, categories: created });
+});
+
+const CreateCategorySchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  slug: z.string().trim().min(1).max(120).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  icon: z.string().trim().min(1).max(50).optional(),
+  description: z.string().trim().max(500).optional(),
+});
+
+router.post("/admin/categories", requireAdmin, async (req, res) => {
+  const parsed = CreateCategorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Validation failed", details: parsed.error.issues });
+    return;
+  }
+
+  try {
+    const [category] = await db
+      .insert(categoriesTable)
+      .values({
+        ...parsed.data,
+        icon: parsed.data.icon ?? "Tag",
+        description: parsed.data.description ?? null,
+      })
+      .returning();
+    res.status(201).json(category);
+  } catch {
+    res.status(409).json({ error: "A category with that name or slug already exists." });
+  }
+});
+
+router.delete("/admin/categories/:id", requireAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(400).json({ error: "Invalid category id" });
+    return;
+  }
+
+  const products = await db
+    .select({ id: productsTable.id })
+    .from(productsTable)
+    .where(eq(productsTable.categoryId, id))
+    .limit(1);
+  if (products.length) {
+    res.status(409).json({ error: "Cannot delete a category that still has products." });
+    return;
+  }
+
+  const deleted = await db.delete(categoriesTable).where(eq(categoriesTable.id, id)).returning();
+  if (!deleted.length) {
+    res.status(404).json({ error: "Category not found" });
+    return;
+  }
+  res.status(204).send();
 });
 
 export default router;

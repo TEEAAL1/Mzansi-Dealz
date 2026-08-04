@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAdminLogin } from "@workspace/api-client-react";
 import { useAdminToken } from "@/hooks/use-admin";
+import { setCsrfToken } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,8 @@ export default function AdminLogin() {
       { data: { password } },
       {
         onSuccess: (res) => {
-          setToken(res.token);
+          setCsrfToken(res.csrfToken);
+          setToken("session");
           setLocation("/products");
         },
         onError: (err) => {

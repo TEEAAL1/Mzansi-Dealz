@@ -172,7 +172,8 @@ export const AdminLoginBody = zod.object({
 })
 
 export const AdminLoginResponse = zod.object({
-  "token": zod.string()
+  "authenticated": zod.boolean(),
+  "csrfToken": zod.string()
 })
 
 
@@ -245,6 +246,17 @@ export const CreateProductBody = zod.object({
 
 
 /**
+ * @summary Create a category
+ */
+export const CreateCategoryBody = zod.object({
+  "name": zod.string(),
+  "slug": zod.string(),
+  "icon": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+
+/**
  * @summary Update a product
  */
 export const UpdateProductParams = zod.object({
@@ -291,6 +303,14 @@ export const UpdateProductResponse = zod.object({
  * @summary Delete a product
  */
 export const DeleteProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Delete a category
+ */
+export const DeleteCategoryParams = zod.object({
   "id": zod.coerce.number()
 })
 

@@ -24,6 +24,7 @@ import NotFound from "@/pages/not-found";
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminCategories from "@/pages/admin/AdminCategories";
 import AdminProductForm from "@/pages/admin/AdminProductForm";
 import AdminOrders from "@/pages/admin/AdminOrders";
 
@@ -37,8 +38,12 @@ const queryClient = new QueryClient({
 });
 
 function AdminRoutes() {
-  const { token } = useAdminToken();
+  const { token, isChecking } = useAdminToken();
   const [, navigate] = useLocation();
+
+  if (isChecking) {
+    return <div className="min-h-screen bg-gray-50" />;
+  }
 
   if (!token) {
     return (
@@ -65,6 +70,7 @@ function AdminRoutes() {
         </Route>
         <Route path="/dashboard" component={AdminDashboard} />
         <Route path="/products" component={AdminProducts} />
+        <Route path="/categories" component={AdminCategories} />
         <Route path="/products/new">
           {() => <AdminProductForm params={{ id: "new" }} />}
         </Route>

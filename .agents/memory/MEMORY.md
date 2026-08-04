@@ -1,0 +1,1 @@
+- [Admin session security](admin-session-security.md) — admin mutations use secure cookies plus CSRF; do not restore password tokens in browser storage.

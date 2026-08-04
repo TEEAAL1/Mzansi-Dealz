@@ -271,6 +271,31 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [admin]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "409":
+          description: Duplicate category
+
   /admin/products/{id}:
     put:
       operationId: updateProduct
@@ -299,6 +324,7 @@ paths:
           description: Not found
         "401":
           description: Unauthorized
+
     delete:
       operationId: deleteProduct
       tags: [admin]
@@ -316,6 +342,29 @@ paths:
           description: Not found
         "401":
           description: Unauthorized
+
+  /admin/categories/{id}:
+    delete:
+      operationId: deleteCategory
+      tags: [admin]
+      summary: Delete a category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Invalid category id
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+        "409":
+          description: Category contains products
 
   /checkout:
     post:
@@ -495,9 +544,11 @@ components:
 
     AdminLoginResponse:
       type: object
-      required: [token]
+      required: [authenticated, csrfToken]
       properties:
-        token:
+        authenticated:
+          type: boolean
+        csrfToken:
           type: string
 
     AdminStats:
@@ -602,6 +653,19 @@ components:
         onSale:
           type: boolean
         tags:
+          type: string
+
+    CreateCategoryRequest:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        description:
           type: string
 
     CheckoutItem:
