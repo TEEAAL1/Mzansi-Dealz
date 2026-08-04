@@ -1,2 +1,3 @@
 - [Admin session security](admin-session-security.md) — admin mutations use secure cookies plus CSRF; do not restore password tokens in browser storage.
 - [Payment provider readiness](payment-provider-readiness.md) — checkout stays disabled until Yoco or PayFast credentials and webhook secrets are configured.
+- [Custom domain deployment split](custom-domain-deployment.md) — mzansidealz.com is served by Vercel separately from the Replit deployment; sync GitHub and publish Replit for full updates.
