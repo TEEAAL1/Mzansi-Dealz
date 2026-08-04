@@ -22,6 +22,21 @@ function passwordHash() {
   return process.env.ADMIN_PASSWORD_HASH ?? DEFAULT_ADMIN_PASSWORD_HASH;
 }
 
+let configuredPasswordHash: Promise<string> | undefined;
+
+function activePasswordHash() {
+  if (process.env.ADMIN_PASSWORD_HASH) {
+    return Promise.resolve(process.env.ADMIN_PASSWORD_HASH);
+  }
+
+  if (process.env.ADMIN_PASSWORD) {
+    configuredPasswordHash ??= bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+    return configuredPasswordHash;
+  }
+
+  return Promise.resolve(passwordHash());
+}
+
 function cleanupSessions() {
   // Session expiry is checked from the signed cookie payload.
 }
@@ -33,7 +48,7 @@ function sameSecret(left: string, right: string) {
 }
 
 export async function verifyAdminPassword(password: string) {
-  return bcrypt.compare(password, passwordHash());
+  return bcrypt.compare(password, await activePasswordHash());
 }
 
 export function createAdminSession(res: Response) {
