@@ -1,0 +1,427 @@
+You are a senior software architect and payments engineer.
+
+Implement a production-ready payment system for the Mzansi Dealz ecommerce platform.
+
+The application is built with React/Vite, Node.js and Express.
+
+IMPORTANT:
+Do not break any existing functionality.
+Integrate payments cleanly with the current architecture.
+
+========================
+PHASE 1 - YOCO (Priority)
+========================
+
+Implement full Yoco Online Payments integration.
+
+Requirements:
+
+• Secure backend payment endpoint.
+• Never expose secret keys in the frontend.
+• Store keys in environment variables.
+• Use latest Yoco Checkout API.
+• Support:
+    - Card payments
+    - Apple Pay (if supported)
+    - Google Pay (if supported)
+
+Checkout Flow
+
+Customer
+↓
+
+Cart
+
+↓
+
+Checkout
+
+↓
+
+Create Order (Pending Payment)
+
+↓
+
+Generate Yoco Checkout Session
+
+↓
+
+Redirect customer to Yoco Checkout
+
+↓
+
+Successful payment
+
+↓
+
+Verify payment server-side
+
+↓
+
+Mark order Paid
+
+↓
+
+Reduce inventory
+
+↓
+
+Generate Invoice
+
+↓
+
+Send confirmation email
+
+↓
+
+Redirect to Order Success page
+
+If payment fails:
+
+• Keep order Pending
+• Allow customer to retry
+
+Implement secure webhook verification.
+
+Validate webhook signatures.
+
+Prevent duplicate webhook processing.
+
+Prevent double charging.
+
+========================
+PHASE 2 - PAYFAST
+========================
+
+Create a second payment provider.
+
+Implement full PayFast integration.
+
+Support:
+
+• Once-off payments
+• Instant Transaction Notifications (ITN)
+• Payment verification
+• Signature verification
+• Sandbox mode
+• Live mode
+
+Allow administrator to choose:
+
+Default Gateway:
+
+○ Yoco
+○ PayFast
+
+If Yoco unavailable:
+
+Automatically fall back to PayFast.
+
+========================
+PAYMENT SETTINGS
+========================
+
+Create Admin menu:
+
+Settings
+↓
+
+Payments
+
+Allow administrator to configure:
+
+Yoco Secret Key
+
+Yoco Public Key
+
+PayFast Merchant ID
+
+PayFast Merchant Key
+
+Passphrase
+
+Sandbox Mode
+
+Live Mode
+
+Currency
+
+Default Gateway
+
+Enable/Disable gateways
+
+========================
+DATABASE
+========================
+
+Create tables if missing:
+
+orders
+
+payments
+
+transactions
+
+payment_logs
+
+refunds
+
+Store:
+
+Payment ID
+
+Gateway
+
+Status
+
+Reference
+
+Amount
+
+Currency
+
+Customer
+
+Timestamp
+
+Webhook payload
+
+========================
+ORDER STATUS
+========================
+
+Pending
+
+Awaiting Payment
+
+Paid
+
+Processing
+
+Packed
+
+Shipped
+
+Delivered
+
+Cancelled
+
+Refunded
+
+Failed
+
+========================
+ADMIN
+========================
+
+Orders page
+
+Payments page
+
+Refund page
+
+Transaction history
+
+Search
+
+Filters
+
+Export CSV
+
+========================
+SECURITY
+========================
+
+Protect all payment endpoints.
+
+Validate every request.
+
+Validate amounts.
+
+Never trust frontend totals.
+
+Calculate totals server-side.
+
+Implement:
+
+Helmet
+
+Rate limiting
+
+Input validation
+
+Replay protection
+
+Webhook verification
+
+Environment variable validation
+
+Secure logging
+
+========================
+CUSTOMER EXPERIENCE
+========================
+
+Professional checkout
+
+Loading indicators
+
+Payment success page
+
+Payment failed page
+
+Retry payment
+
+Order confirmation
+
+Invoice download
+
+========================
+EMAILS
+========================
+
+Send:
+
+Order Confirmation
+
+Payment Confirmation
+
+Payment Failed
+
+Refund Confirmation
+
+========================
+PHASE 3
+Marketplace Integration API
+
+Create a Marketplace Integration Service.
+
+The API must be modular.
+
+Future supported channels:
+
+Bob Shop
+
+Takealot
+
+Amazon
+
+Facebook Shop
+
+Google Merchant
+
+TikTok Shop
+
+The API should:
+
+Push products
+
+Update stock
+
+Update pricing
+
+Update images
+
+Receive orders
+
+Update tracking numbers
+
+Update shipping status
+
+Sync inventory
+
+Prevent duplicate products
+
+Retry failed synchronisations
+
+Log every request
+
+Create a background queue for synchronisation.
+
+========================
+BOB SHOP PRIORITY
+========================
+
+Implement Bob Shop connector first.
+
+Allow:
+
+Push Product
+
+Update Product
+
+Delete Product
+
+Update Quantity
+
+Update Price
+
+Import Orders
+
+Sync Tracking Numbers
+
+========================
+ARCHITECTURE
+========================
+
+Create services:
+
+paymentService
+
+yocoService
+
+payfastService
+
+marketplaceService
+
+bobshopService
+
+inventoryService
+
+orderService
+
+Keep code modular.
+
+No duplicated code.
+
+========================
+TESTING
+========================
+
+Automatically test:
+
+Successful payment
+
+Failed payment
+
+Cancelled payment
+
+Webhook
+
+Duplicate webhook
+
+Refund
+
+Marketplace sync
+
+========================
+DEPLOYMENT
+========================
+
+Commit changes.
+
+Push to GitHub.
+
+Ensure production build succeeds.
+
+Return:
+
+Files changed
+
+New APIs
+
+Environment variables required
+
+Setup instructions
+
+Testing report
