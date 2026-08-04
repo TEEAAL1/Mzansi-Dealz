@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  apiUrl,
   downloadProductImportCsv,
+  customFetch,
   getDownloadProductImportCsvUrl,
   getGetLatestProductImportQueryKey,
   getGetProductImportQueryKey,
+  getGetProductImportProgressQueryKey,
   useGetLatestProductImport,
   useGetProductImport,
+  useGetProductImportProgress,
   useImportProductRun,
   useRollbackProductImport,
   useStartProductImport,
 } from "@workspace/api-client-react";
+import type { ProductImportStartResponse } from "@workspace/api-client-react";
 import type { ProductImportItem } from "@workspace/api-client-react";
 import { AlertCircle, ArchiveRestore, CheckCircle2, CircleHelp, Download, FileSpreadsheet, ImageOff, Loader2, PackageCheck, PackageX, Play, RefreshCw, Search, ShieldCheck, Tag, Upload, X } from "lucide-react";
 import { useAdminHeaders } from "@/hooks/use-admin";
@@ -106,7 +109,15 @@ export default function AdminProductImport() {
       refetchInterval: selectedRunId && isActiveStatus(latestRun?.status) ? 2500 : false,
     },
   });
-  const run = importQuery.data?.run ?? latestRun;
+  const progressQuery = useGetProductImportProgress(selectedRunId ?? 0, {
+    request: { headers },
+    query: {
+      enabled: Boolean(selectedRunId),
+      queryKey: getGetProductImportProgressQueryKey(selectedRunId ?? 0),
+      refetchInterval: selectedRunId ? 2500 : false,
+    },
+  });
+  const run = progressQuery.data?.run ?? importQuery.data?.run ?? latestRun;
   const items = importQuery.data?.items ?? [];
   const isBusy = isActiveStatus(run?.status);
 
@@ -115,15 +126,19 @@ export default function AdminProductImport() {
   const rollbackRun = useRollbackProductImport({ request: { headers } });
 
   const metrics = useMemo(() => ({
-    imported: run?.productsImported ?? 0,
-    failed: run?.productsFailed ?? 0,
-    images: run?.missingImages ?? items.filter((item) => item.missingImage).length,
-    prices: run?.missingPrices ?? items.filter((item) => item.missingPrice).length,
-  }), [items, run]);
+    imported: progressQuery.data?.progress.imported ?? run?.productsImported ?? 0,
+    failed: progressQuery.data?.progress.failed ?? run?.productsFailed ?? 0,
+    images: progressQuery.data?.progress.missingImages ?? run?.missingImages ?? items.filter((item) => item.missingImage).length,
+    prices: progressQuery.data?.progress.missingPrices ?? run?.missingPrices ?? items.filter((item) => item.missingPrice).length,
+    pending: progressQuery.data?.progress.pending ?? 0,
+    total: progressQuery.data?.progress.total ?? run?.totalDiscovered ?? 0,
+    percentComplete: progressQuery.data?.progress.percentComplete ?? (run?.status === "completed" ? 100 : 0),
+  }), [items, progressQuery.data, run]);
 
   const refreshImport = () => {
     void queryClient.invalidateQueries({ queryKey: getGetLatestProductImportQueryKey() });
     if (selectedRunId) void queryClient.invalidateQueries({ queryKey: getGetProductImportQueryKey(selectedRunId) });
+    if (selectedRunId) void queryClient.invalidateQueries({ queryKey: getGetProductImportProgressQueryKey(selectedRunId) });
   };
 
   const handleStart = () => {
@@ -155,18 +170,15 @@ export default function AdminProductImport() {
       formData.append("sourceUrl", sourceUrl.trim());
       formData.append("overwriteExisting", String(overwriteExisting));
       formData.append("importImages", String(importImages));
-      const response = await fetch(apiUrl("/api/admin/product-import/upload-csv"), {
+      const response = await customFetch<ProductImportStartResponse>("/api/admin/product-import/upload-csv", {
         method: "POST",
-        credentials: "include",
         headers,
         body: formData,
       });
-      const payload = await response.json() as { run?: { id: number }; message?: string; error?: string };
-      if (!response.ok || !payload.run) throw new Error(payload.error || "CSV upload failed.");
-      setSelectedRunId(payload.run.id);
-      setSelectedFile(null);
-      toast({ title: "CSV uploaded", description: payload.message || "Your active product preview is being prepared." });
-      refreshImport();
+        setSelectedRunId(response.run.id);
+        setSelectedFile(null);
+        toast({ title: "CSV uploaded", description: response.message || "Your active product preview is being prepared." });
+        refreshImport();
     } catch (error) {
       toast({ title: "CSV upload failed", description: error instanceof Error ? error.message : "The CSV could not be uploaded.", variant: "destructive" });
     } finally {
@@ -292,19 +304,19 @@ export default function AdminProductImport() {
                     accept=".csv,text/csv"
                     className="max-w-[15rem] bg-white text-xs file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-2 file:py-1 file:text-xs file:font-medium"
                     onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                    disabled={isUploading || isBusy}
+                     disabled={isUploading || isBusy}
                     data-testid="input-product-csv"
                   />
-                  <Button onClick={handleUpload} disabled={isUploading || isBusy || !selectedFile} variant="outline" className="shrink-0 gap-2 bg-white" data-testid="button-upload-csv">
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {isUploading ? "Uploading…" : "Upload CSV"}
+                   <Button onClick={handleUpload} disabled={isUploading || isBusy || !selectedFile} variant="outline" className="shrink-0 gap-2 bg-white" data-testid="button-upload-csv">
+                     {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                     {isUploading ? "Uploading…" : "Upload CSV"}
                   </Button>
                 </div>
               </div>
               {selectedFile && <p className="mt-2 text-xs font-medium text-primary" data-testid="text-selected-csv">Selected: {selectedFile.name}</p>}
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleStart} disabled={startImport.isPending || isBusy || isUploading} className="gap-2" data-testid="button-crawl-preview">{startImport.isPending || isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{isBusy ? "Preparing…" : "Crawl / Preview instead"}</Button>
+               <Button onClick={handleStart} disabled={startImport.isPending || isBusy || isUploading} className="gap-2" data-testid="button-crawl-preview">{startImport.isPending || isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}{isBusy ? "Preparing…" : "Crawl / Preview instead"}</Button>
               {run && <Button variant="outline" onClick={handleDownload} disabled={isDownloading} data-csv-endpoint={getDownloadProductImportCsvUrl(run.id)} data-testid="button-preview-csv"><Download className="mr-2 h-4 w-4" />{isDownloading ? "Preparing CSV…" : "Preview CSV"}</Button>}
             </div>
             {isBusy && <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status" data-testid="status-polling-crawl"><Loader2 className="h-3.5 w-3.5 animate-spin" />Live status is updating every few seconds. You can leave this page open.</div>}
@@ -318,6 +330,27 @@ export default function AdminProductImport() {
           </CardContent>
         </Card>
       </section>
+
+      {run && <Card className="border-slate-200/80 shadow-sm" data-testid="card-live-import-monitor">
+        <CardContent className="space-y-3 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold text-slate-900"><span className={`h-2 w-2 rounded-full ${isBusy ? "animate-pulse bg-amber-500" : run.status === "completed" ? "bg-emerald-500" : "bg-slate-400"}`} />Live product monitor</p>
+              <p className="mt-1 text-xs text-slate-500">{isBusy ? "Updating automatically every few seconds." : `Last update: ${formatDate(run.completedAt || run.createdAt)}`}</p>
+            </div>
+            <span className="text-sm font-semibold text-slate-900" data-testid="text-import-progress">{metrics.percentComplete}% · {metrics.imported.toLocaleString("en-ZA")} of {metrics.total.toLocaleString("en-ZA")}</span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={metrics.percentComplete}>
+            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.min(100, metrics.percentComplete)}%` }} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
+            <span><strong className="text-slate-900">{metrics.pending.toLocaleString("en-ZA")}</strong> pending</span>
+            <span><strong className="text-emerald-700">{metrics.imported.toLocaleString("en-ZA")}</strong> imported</span>
+            <span><strong className="text-rose-700">{metrics.failed.toLocaleString("en-ZA")}</strong> failed</span>
+            <span><strong className="text-slate-900">{metrics.total.toLocaleString("en-ZA")}</strong> total rows</span>
+          </div>
+        </CardContent>
+      </Card>}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Import report" data-testid="section-import-report">
         <MetricCard label="Products Imported" value={metrics.imported} icon={PackageCheck} tone="bg-emerald-100 text-emerald-700" />

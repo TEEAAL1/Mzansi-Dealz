@@ -75,6 +75,49 @@ router.get("/admin/product-import/:id", requireAdmin, async (req, res): Promise<
   });
 });
 
+router.get("/admin/product-import/:id/progress", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  const [run] = await db.select().from(productImportRunsTable).where(eq(productImportRunsTable.id, id)).limit(1);
+  if (!run) {
+    res.status(404).json({ error: "Import run not found" });
+    return;
+  }
+
+  const [summary] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      imported: sql<number>`count(*) filter (where ${productImportItemsTable.status} = 'imported')::int`,
+      failed: sql<number>`count(*) filter (where ${productImportItemsTable.status} = 'failed')::int`,
+      pending: sql<number>`count(*) filter (where ${productImportItemsTable.status} <> 'imported' and ${productImportItemsTable.status} <> 'failed')::int`,
+      missingImages: sql<number>`count(*) filter (where ${productImportItemsTable.missingImage} = true)::int`,
+      missingPrices: sql<number>`count(*) filter (where ${productImportItemsTable.missingPrice} = true)::int`,
+    })
+    .from(productImportItemsTable)
+    .where(eq(productImportItemsTable.runId, id));
+
+  const total = summary?.total ?? 0;
+  const imported = summary?.imported ?? 0;
+  const failed = summary?.failed ?? 0;
+  const finished = imported + failed;
+
+  res.json({
+    run: {
+      ...run,
+      createdAt: run.createdAt.toISOString(),
+      completedAt: run.completedAt?.toISOString() ?? null,
+    },
+    progress: {
+      total,
+      imported,
+      failed,
+      pending: summary?.pending ?? 0,
+      missingImages: summary?.missingImages ?? 0,
+      missingPrices: summary?.missingPrices ?? 0,
+      percentComplete: total === 0 ? 0 : Math.round((finished / total) * 100),
+    },
+  });
+});
+
 router.post("/admin/product-import/start", requireAdmin, async (req, res): Promise<void> => {
   const input = req.body as Partial<{
     sourceUrl: string;

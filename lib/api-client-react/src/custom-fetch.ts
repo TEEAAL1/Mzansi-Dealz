@@ -309,6 +309,18 @@ function inferResponseType(response: Response): "json" | "text" | "blob" {
   return "blob";
 }
 
+async function refreshAdminCsrfToken(requestUrl: string): Promise<string | null> {
+  const sessionUrl = requestUrl.startsWith("http")
+    ? new URL("/api/admin/session", requestUrl).toString()
+    : "/api/admin/session";
+  const response = await fetch(sessionUrl, { credentials: "include" });
+  if (!response.ok) return null;
+  const payload = await response.json() as { authenticated?: boolean; csrfToken?: string };
+  if (!payload.authenticated || !payload.csrfToken) return null;
+  setCsrfToken(payload.csrfToken);
+  return payload.csrfToken;
+}
+
 async function parseSuccessBody(
   response: Response,
   responseType: "json" | "text" | "blob" | "auto",
@@ -383,7 +395,7 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, {
+  let response = await fetch(input, {
     ...init,
     method,
     headers,
@@ -392,6 +404,25 @@ export async function customFetch<T = unknown>(
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
+    const errorMessage =
+      typeof errorData === "object" && errorData !== null && "error" in errorData
+        ? String((errorData as { error?: unknown }).error ?? "")
+        : "";
+    if (response.status === 403 && errorMessage.toLowerCase().includes("csrf") && method !== "GET" && method !== "HEAD") {
+      const refreshedToken = await refreshAdminCsrfToken(requestInfo.url);
+      if (refreshedToken) {
+        headers.set("x-csrf-token", refreshedToken);
+        response = await fetch(input, {
+          ...init,
+          method,
+          headers,
+          credentials: init.credentials ?? "include",
+        });
+        if (response.ok) {
+          return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+        }
+      }
+    }
     throw new ApiError(response, errorData, requestInfo);
   }
 

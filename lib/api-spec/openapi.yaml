@@ -483,6 +483,29 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/product-import/{id}/progress:
+    get:
+      operationId: getProductImportProgress
+      tags: [admin]
+      summary: Get lightweight realtime product import progress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Import progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImportProgressResponse"
+        "404":
+          description: Import not found
+        "401":
+          description: Unauthorized
+
   /admin/product-import/{id}/import:
     post:
       operationId: importProductRun
@@ -1236,6 +1259,34 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProductImportItem"
+
+    ProductImportProgress:
+      type: object
+      required: [total, imported, failed, pending, missingImages, missingPrices, percentComplete]
+      properties:
+        total:
+          type: integer
+        imported:
+          type: integer
+        failed:
+          type: integer
+        pending:
+          type: integer
+        missingImages:
+          type: integer
+        missingPrices:
+          type: integer
+        percentComplete:
+          type: integer
+
+    ProductImportProgressResponse:
+      type: object
+      required: [run, progress]
+      properties:
+        run:
+          $ref: "#/components/schemas/ProductImportRun"
+        progress:
+          $ref: "#/components/schemas/ProductImportProgress"
 
     ProductImportStartResponse:
       type: object

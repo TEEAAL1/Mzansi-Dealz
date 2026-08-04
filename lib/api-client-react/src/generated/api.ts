@@ -43,6 +43,7 @@ import type {
   PaymentSettingsInput,
   Product,
   ProductImportOptions,
+  ProductImportProgressResponse,
   ProductImportStartResponse,
   ProductImportStatusResponse,
   ProductList,
@@ -1746,6 +1747,83 @@ export function useGetProductImport<TData = Awaited<ReturnType<typeof getProduct
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetProductImportQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetProductImportProgressUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}/progress`
+}
+
+/**
+ * @summary Get lightweight realtime product import progress
+ */
+export const getProductImportProgress = async (id: number, options?: RequestInit): Promise<ProductImportProgressResponse> => {
+
+  return customFetch<ProductImportProgressResponse>(getGetProductImportProgressUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductImportProgressQueryKey = (id: number,) => {
+    return [
+    `/api/admin/product-import/${id}/progress`
+    ] as const;
+    }
+
+
+export const getGetProductImportProgressQueryOptions = <TData = Awaited<ReturnType<typeof getProductImportProgress>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductImportProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductImportProgressQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductImportProgress>>> = ({ signal }) => getProductImportProgress(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductImportProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductImportProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getProductImportProgress>>>
+export type GetProductImportProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get lightweight realtime product import progress
+ */
+
+export function useGetProductImportProgress<TData = Awaited<ReturnType<typeof getProductImportProgress>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductImportProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductImportProgressQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

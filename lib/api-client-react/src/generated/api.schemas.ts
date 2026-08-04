@@ -266,6 +266,21 @@ export interface ProductImportStatusResponse {
   items: ProductImportItem[];
 }
 
+export interface ProductImportProgress {
+  total: number;
+  imported: number;
+  failed: number;
+  pending: number;
+  missingImages: number;
+  missingPrices: number;
+  percentComplete: number;
+}
+
+export interface ProductImportProgressResponse {
+  run: ProductImportRun;
+  progress: ProductImportProgress;
+}
+
 export interface ProductImportStartResponse {
   run: ProductImportRun;
   message: string;

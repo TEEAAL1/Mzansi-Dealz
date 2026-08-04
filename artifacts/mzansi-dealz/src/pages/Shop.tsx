@@ -19,13 +19,29 @@ export default function Shop({ params }: { params?: { category?: string } }) {
   const searchStr = useSearch();
   const queryParams = new URLSearchParams(searchStr);
   const initialOnSale = queryParams.get("on_sale") === "true";
+  const initialPage = Math.max(1, Number(queryParams.get("page")) || 1);
   
   const [sort, setSort] = useState<ListProductsSort>("newest");
   const [onSaleOnly, setOnSaleOnly] = useState(initialOnSale);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const limit = 12;
 
   const categorySlug = params?.category;
+
+  useEffect(() => {
+    setPage(initialPage);
+  }, [categorySlug, initialPage]);
+
+  const updatePage = (nextPage: number) => {
+    const safePage = Math.max(1, nextPage);
+    setPage(safePage);
+    const nextParams = new URLSearchParams(searchStr);
+    if (safePage === 1) nextParams.delete("page");
+    else nextParams.set("page", String(safePage));
+    const query = nextParams.toString();
+    const prefix = categorySlug ? `/shop/${categorySlug}` : "/shop";
+    window.history.replaceState({}, "", `${prefix}${query ? `?${query}` : ""}`);
+  };
 
   const { data: categories } = useListCategories();
   
@@ -90,7 +106,7 @@ export default function Shop({ params }: { params?: { category?: string } }) {
                   checked={onSaleOnly}
                   onCheckedChange={(checked) => {
                     setOnSaleOnly(checked === true);
-                    setPage(1);
+                    updatePage(1);
                   }}
                 />
                 <Label htmlFor="on-sale" className="font-medium cursor-pointer flex items-center gap-2">
@@ -102,7 +118,7 @@ export default function Shop({ params }: { params?: { category?: string } }) {
 
             <div>
               <h3 className="font-bold text-lg mb-4 pb-2 border-b border-border">Sort By</h3>
-              <Select value={sort} onValueChange={(val: ListProductsSort) => { setSort(val); setPage(1); }}>
+               <Select value={sort} onValueChange={(val: ListProductsSort) => { setSort(val); updatePage(1); }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Sort deals by..." />
                 </SelectTrigger>
@@ -156,15 +172,15 @@ export default function Shop({ params }: { params?: { category?: string } }) {
                 <div className="mt-auto pt-8 border-t border-border flex items-center justify-center gap-4">
                   <Button 
                     variant="outline" 
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                     onClick={() => updatePage(page - 1)}
                     disabled={page === 1}
                   >
                     Previous
                   </Button>
-                  <span className="text-sm font-medium">Page {page}</span>
+                   <span className="text-sm font-medium">Page {page} of {Math.ceil(productData.total / limit)}</span>
                   <Button 
                     variant="outline" 
-                    onClick={() => setPage(p => p + 1)}
+                     onClick={() => updatePage(page + 1)}
                     disabled={page * limit >= productData.total}
                   >
                     Next

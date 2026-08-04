@@ -497,6 +497,43 @@ export const GetProductImportResponse = zod.object({
 
 
 /**
+ * @summary Get lightweight realtime product import progress
+ */
+export const GetProductImportProgressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetProductImportProgressResponse = zod.object({
+  "run": zod.object({
+  "id": zod.number(),
+  "sourceDomain": zod.string(),
+  "status": zod.string(),
+  "totalDiscovered": zod.number(),
+  "productsImported": zod.number(),
+  "productsFailed": zod.number(),
+  "missingImages": zod.number(),
+  "missingPrices": zod.number(),
+  "overwriteExisting": zod.boolean(),
+  "skipExisting": zod.boolean(),
+  "importImages": zod.boolean(),
+  "csvPath": zod.string().nullish(),
+  "error": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "completedAt": zod.string().nullish()
+}),
+  "progress": zod.object({
+  "total": zod.number(),
+  "imported": zod.number(),
+  "failed": zod.number(),
+  "pending": zod.number(),
+  "missingImages": zod.number(),
+  "missingPrices": zod.number(),
+  "percentComplete": zod.number()
+})
+})
+
+
+/**
  * @summary Import the previewed product migration CSV
  */
 export const ImportProductRunParams = zod.object({

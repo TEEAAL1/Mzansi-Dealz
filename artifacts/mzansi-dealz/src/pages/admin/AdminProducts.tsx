@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +33,9 @@ export default function AdminProducts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: productsData, isLoading } = useListProducts({ limit: 200 });
+  const [page, setPage] = useState(0);
+  const pageSize = 200;
+  const { data: productsData, isLoading } = useListProducts({ limit: pageSize, offset: page * pageSize });
 
   const handleDelete = async (id: number, name: string) => {
     try {
@@ -54,7 +57,7 @@ export default function AdminProducts() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-500 mt-1">
-            {isLoading ? "Loading..." : `${products.length} product${products.length !== 1 ? "s" : ""} in your store`}
+            {isLoading ? "Loading..." : `Showing ${products.length.toLocaleString()} of ${(productsData?.total ?? 0).toLocaleString()} products in your store`}
           </p>
         </div>
         <Link href="/products/new">
@@ -64,6 +67,16 @@ export default function AdminProducts() {
           </Button>
         </Link>
       </div>
+
+      {(productsData?.total ?? 0) > pageSize && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600" data-testid="product-pagination">
+          <span>Page {page + 1} of {Math.max(1, Math.ceil((productsData?.total ?? 0) / pageSize))}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage((current) => Math.max(0, current - 1))} disabled={page === 0 || isLoading}><ChevronLeft className="mr-1 h-4 w-4" />Previous</Button>
+            <Button variant="outline" size="sm" onClick={() => setPage((current) => current + 1)} disabled={(page + 1) * pageSize >= (productsData?.total ?? 0) || isLoading}>Next<ChevronRight className="ml-1 h-4 w-4" /></Button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <Table>
