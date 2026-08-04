@@ -82,6 +82,8 @@ export default function Checkout() {
 
   const deliveryFee = subtotal >= 400 ? 0 : 69;
   const grandTotal = subtotal + deliveryFee;
+  const activeGateways = checkoutOptions?.gateways.filter((gateway) => gateway.available) ?? [];
+  const activeGateway = activeGateways.find((gateway) => gateway.id === selectedGateway) ?? activeGateways[0];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -260,7 +262,7 @@ export default function Checkout() {
               <p role="alert" className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">No payment gateway is currently available. Please try again later.</p>
             ) : (
               <div className="space-y-3">
-                {checkoutOptions.gateways.map((gateway) => {
+                {activeGateways.map((gateway) => {
                   const isSelected = selectedGateway === gateway.id;
                   return (
                     <button
@@ -353,6 +355,33 @@ export default function Checkout() {
                 <div className="flex justify-between items-end">
                   <span className="font-bold text-lg">Total</span>
                   <span className="font-black text-2xl text-primary">{formatZAR(grandTotal)}</span>
+                </div>
+              </div>
+
+              <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-emerald-900 dark:text-emerald-200">Trusted payment options</p>
+                    {activeGateway ? (
+                      <>
+                        <p className="mt-1 text-xs leading-relaxed text-emerald-800 dark:text-emerald-300">
+                          Pay securely with {activeGateway.name}. You will complete payment on the provider’s secure hosted page.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {activeGateway.methods.map((method) => (
+                            <span key={method} className="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-emerald-900 shadow-sm dark:bg-emerald-900 dark:text-emerald-100">
+                              {method}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="mt-1 text-xs text-emerald-800 dark:text-emerald-300">Secure payment options are loading.</p>
+                    )}
+                  </div>
                 </div>
               </div>
               
