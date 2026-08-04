@@ -28,17 +28,25 @@ app.use(
     },
   }),
 );
-const allowedOrigins = new Set(
-  [
-    process.env.CORS_ORIGINS,
-    process.env.FRONTEND_ORIGIN,
-    process.env.REPLIT_DOMAINS,
-  ]
-    .filter(Boolean)
-    .join(",")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean),
+function normalizeOrigins(...values: Array<string | undefined>) {
+  return new Set(
+    values
+      .filter(Boolean)
+      .flatMap((value) => value!.split(","))
+      .map((origin) => origin.trim().replace(/\/$/, ""))
+      .filter(Boolean)
+      .flatMap((origin) =>
+        /^https?:\/\//i.test(origin)
+          ? [origin]
+          : [`https://${origin}`, `http://${origin}`],
+      ),
+  );
+}
+
+const allowedOrigins = normalizeOrigins(
+  process.env.CORS_ORIGINS,
+  process.env.FRONTEND_ORIGIN,
+  process.env.REPLIT_DOMAINS,
 );
 app.use(
   cors({
