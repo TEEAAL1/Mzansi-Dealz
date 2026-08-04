@@ -58,7 +58,22 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not retry payment");
-      window.location.assign(data.redirectUrl);
+      if (data.gateway === "yoco" || !data.payfastData) {
+        window.location.assign(data.redirectUrl);
+        return;
+      }
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.payfastUrl ?? data.redirectUrl;
+      Object.entries(data.payfastData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = String(value);
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
     } catch {
       setRetrying(false);
     }

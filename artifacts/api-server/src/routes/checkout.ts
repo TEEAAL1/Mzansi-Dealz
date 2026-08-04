@@ -74,7 +74,13 @@ async function chooseGateway(requested: string | undefined): Promise<{
   const settings = await getPaymentSettings();
   const yocoAvailable = settings.yocoEnabled && isYocoConfigured();
   const payfastAvailable = settings.payfastEnabled && isPayfastConfigured();
-  const preferred = requested === "yoco" || requested === "payfast" ? requested : settings.defaultGateway;
+  if (requested === "yoco") {
+    return { settings, gateway: yocoAvailable ? "yoco" : null };
+  }
+  if (requested === "payfast") {
+    return { settings, gateway: payfastAvailable ? "payfast" : null };
+  }
+  const preferred = settings.defaultGateway;
   const gateway =
     preferred === "yoco" && yocoAvailable ? "yoco" :
     preferred === "payfast" && payfastAvailable ? "payfast" :
@@ -164,7 +170,11 @@ router.post("/checkout", async (req, res) => {
     }
     const selected = await chooseGateway(body.gateway);
     if (!selected.gateway) {
-      res.status(503).json({ error: "No payment gateway is configured. An administrator must configure Yoco or PayFast." });
+      res.status(503).json({
+        error: body.gateway
+          ? `${body.gateway === "yoco" ? "Yoco" : "PayFast"} is currently unavailable. Please choose another payment method.`
+          : "No payment gateway is configured. An administrator must configure Yoco or PayFast.",
+      });
       return;
     }
     if (body.idempotencyKey) {
@@ -222,6 +232,39 @@ router.post("/checkout", async (req, res) => {
   }
 });
 
+router.get("/checkout/options", async (_req, res) => {
+  const settings = await getPaymentSettings();
+  const yocoAvailable = settings.yocoEnabled && isYocoConfigured();
+  const payfastAvailable = settings.payfastEnabled && isPayfastConfigured();
+  const gateways = [
+    {
+      id: "yoco",
+      name: "Yoco",
+      available: yocoAvailable,
+      description: "Secure hosted checkout for cards and instant EFT.",
+      methods: ["Visa", "Mastercard", "American Express", "Instant EFT"],
+    },
+    {
+      id: "payfast",
+      name: "PayFast",
+      available: payfastAvailable,
+      description: "PayFast hosted checkout with cards and EFT options.",
+      methods: ["Visa", "Mastercard", "Instant EFT", "Capitec Pay"],
+    },
+  ];
+  const defaultGateway =
+    settings.defaultGateway === "yoco" && yocoAvailable
+      ? "yoco"
+      : settings.defaultGateway === "payfast" && payfastAvailable
+        ? "payfast"
+        : yocoAvailable
+          ? "yoco"
+          : payfastAvailable
+            ? "payfast"
+            : null;
+  res.json({ currency: settings.currency, defaultGateway, gateways });
+});
+
 router.post("/checkout/retry/:orderNumber", async (req, res) => {
   const email = typeof req.body?.customerEmail === "string" ? req.body.customerEmail.trim().toLowerCase() : "";
   if (!email) {
@@ -240,7 +283,11 @@ router.post("/checkout/retry/:orderNumber", async (req, res) => {
   const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
   const selected = await chooseGateway(typeof req.body?.gateway === "string" ? req.body.gateway : undefined);
   if (!selected.gateway) {
-    res.status(503).json({ error: "No payment gateway is configured" });
+    res.status(503).json({
+      error: req.body?.gateway
+        ? `${req.body.gateway === "yoco" ? "Yoco" : "PayFast"} is currently unavailable. Please choose another payment method.`
+        : "No payment gateway is configured.",
+    });
     return;
   }
   try {

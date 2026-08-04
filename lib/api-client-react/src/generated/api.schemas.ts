@@ -241,6 +241,43 @@ export interface CheckoutResponse {
   payfastData?: CheckoutResponsePayfastData;
 }
 
+export type CheckoutOptionsCurrency = typeof CheckoutOptionsCurrency[keyof typeof CheckoutOptionsCurrency];
+
+
+export const CheckoutOptionsCurrency = {
+  ZAR: 'ZAR',
+} as const;
+
+export type CheckoutOptionsDefaultGateway = typeof CheckoutOptionsDefaultGateway[keyof typeof CheckoutOptionsDefaultGateway] | null;
+
+
+export const CheckoutOptionsDefaultGateway = {
+  yoco: 'yoco',
+  payfast: 'payfast',
+} as const;
+
+export type CheckoutOptionsGatewaysItemId = typeof CheckoutOptionsGatewaysItemId[keyof typeof CheckoutOptionsGatewaysItemId];
+
+
+export const CheckoutOptionsGatewaysItemId = {
+  yoco: 'yoco',
+  payfast: 'payfast',
+} as const;
+
+export type CheckoutOptionsGatewaysItem = {
+  id: CheckoutOptionsGatewaysItemId;
+  name: string;
+  available: boolean;
+  description: string;
+  methods: string[];
+};
+
+export interface CheckoutOptions {
+  currency: CheckoutOptionsCurrency;
+  defaultGateway: CheckoutOptionsDefaultGateway;
+  gateways: CheckoutOptionsGatewaysItem[];
+}
+
 export type RetryCheckoutInputGateway = typeof RetryCheckoutInputGateway[keyof typeof RetryCheckoutInputGateway];
 
 

@@ -452,6 +452,22 @@ export const CreateCheckoutResponse = zod.object({
 
 
 /**
+ * @summary List available hosted payment gateways
+ */
+export const GetCheckoutOptionsResponse = zod.object({
+  "currency": zod.enum(['ZAR']),
+  "defaultGateway": zod.union([zod.literal('yoco'),zod.literal('payfast'),zod.literal(null)]).nullable(),
+  "gateways": zod.array(zod.object({
+  "id": zod.enum(['yoco', 'payfast']),
+  "name": zod.string(),
+  "available": zod.boolean(),
+  "description": zod.string(),
+  "methods": zod.array(zod.string())
+}))
+})
+
+
+/**
  * @summary Retry payment for an unpaid order
  */
 export const RetryCheckoutParams = zod.object({

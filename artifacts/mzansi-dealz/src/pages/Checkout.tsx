@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useCart } from "@/hooks/use-cart";
-import { useCreateCheckout } from "@workspace/api-client-react";
+import { apiUrl, useCreateCheckout } from "@workspace/api-client-react";
 import { formatZAR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ShieldCheck, Lock, ShoppingBag } from "lucide-react";
+import { Check, CreditCard, Landmark, Lock, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PROVINCES = [
@@ -21,11 +21,28 @@ const PROVINCES = [
   "Northern Cape",
 ];
 
+type GatewayId = "yoco" | "payfast";
+type GatewayOption = {
+  id: GatewayId;
+  name: string;
+  available: boolean;
+  description: string;
+  methods: string[];
+};
+
+type CheckoutOptions = {
+  defaultGateway: GatewayId | null;
+  gateways: GatewayOption[];
+};
+
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const { items, subtotal, clearCart, totalItems } = useCart();
   const { mutate: checkout, isPending } = useCreateCheckout();
   const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutOptions, setCheckoutOptions] = useState<CheckoutOptions | null>(null);
+  const [selectedGateway, setSelectedGateway] = useState<GatewayId>("yoco");
+  const [optionsError, setOptionsError] = useState("");
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -36,6 +53,26 @@ export default function Checkout() {
     deliveryProvince: "",
     deliveryPostalCode: "",
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(apiUrl("/api/checkout/options"), { headers: { Accept: "application/json" } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Payment methods are temporarily unavailable.");
+        return response.json() as Promise<CheckoutOptions>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setCheckoutOptions(data);
+        if (data.defaultGateway) setSelectedGateway(data.defaultGateway);
+      })
+      .catch((error) => {
+        if (!cancelled) setOptionsError(error instanceof Error ? error.message : "Payment methods are temporarily unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // If cart is empty, user shouldn't be here
   if (items.length === 0) {
@@ -62,12 +99,17 @@ export default function Checkout() {
       data: {
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
         ...formData,
+        gateway: selectedGateway,
         idempotencyKey: `web-${Date.now()}-${crypto.randomUUID()}`,
       }
     }, {
       onSuccess: (response) => {
         clearCart();
         if (response.gateway === "yoco") {
+          window.location.assign(response.redirectUrl);
+          return;
+        }
+        if (!response.payfastData) {
           window.location.assign(response.redirectUrl);
           return;
         }
@@ -201,6 +243,69 @@ export default function Checkout() {
               </div>
             </div>
           </div>
+
+          <div className="bg-card border border-border rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+              <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-sm">3</span>
+              Payment method
+            </h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Choose a secure hosted payment page. Your card details never pass through MzansiDealz.
+            </p>
+            {optionsError ? (
+              <p role="alert" className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{optionsError}</p>
+            ) : !checkoutOptions ? (
+              <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">Loading secure payment methods…</div>
+            ) : checkoutOptions.gateways.filter((gateway) => gateway.available).length === 0 ? (
+              <p role="alert" className="rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800">No payment gateway is currently available. Please try again later.</p>
+            ) : (
+              <div className="space-y-3">
+                {checkoutOptions.gateways.map((gateway) => {
+                  const isSelected = selectedGateway === gateway.id;
+                  return (
+                    <button
+                      key={gateway.id}
+                      type="button"
+                      disabled={!gateway.available}
+                      onClick={() => gateway.available && setSelectedGateway(gateway.id)}
+                      className={`w-full rounded-xl border p-4 text-left transition ${
+                        isSelected && gateway.available
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                          : gateway.available
+                            ? "border-border hover:border-primary/50"
+                            : "cursor-not-allowed border-border bg-muted/40 opacity-60"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-0.5 flex h-10 w-10 items-center justify-center rounded-lg ${
+                          isSelected && gateway.available ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        }`}>
+                          {gateway.id === "yoco" ? <CreditCard className="h-5 w-5" /> : <Wallet className="h-5 w-5" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-bold">{gateway.name}</span>
+                            {isSelected && gateway.available && <Check className="h-5 w-5 text-primary" />}
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {gateway.available ? gateway.description : "Currently unavailable"}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {gateway.methods.map((method) => (
+                              <span key={method} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                                {method.includes("EFT") || method.includes("Pay") ? <Landmark className="h-3 w-3" /> : <CreditCard className="h-3 w-3" />}
+                                {method}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="w-full lg:w-[400px] shrink-0">
@@ -255,9 +360,13 @@ export default function Checkout() {
                 type="submit" 
                 size="lg" 
                 className="w-full h-14 text-lg font-bold tracking-wide shadow-md"
-                disabled={isPending}
+                disabled={
+                  isPending ||
+                  !checkoutOptions ||
+                  !checkoutOptions.gateways.some((gateway) => gateway.available)
+                }
               >
-                {isPending ? "PROCESSING..." : "Continue to secure payment"}
+                {isPending ? "PROCESSING..." : `Continue with ${selectedGateway === "yoco" ? "Yoco" : "PayFast"}`}
               </Button>
               {checkoutError && (
                 <p role="alert" className="mt-3 text-sm text-destructive text-center">{checkoutError}</p>

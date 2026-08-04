@@ -505,6 +505,19 @@ paths:
         "400":
           description: Validation error
 
+  /checkout/options:
+    get:
+      operationId: getCheckoutOptions
+      tags: [checkout]
+      summary: List available hosted payment gateways
+      responses:
+        "200":
+          description: Available payment gateways
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutOptions"
+
   /checkout/notify:
     post:
       operationId: handlePayfastNotify
@@ -1027,6 +1040,37 @@ components:
           nullable: true
           additionalProperties:
             type: string
+
+    CheckoutOptions:
+      type: object
+      required: [currency, defaultGateway, gateways]
+      properties:
+        currency:
+          type: string
+          enum: [ZAR]
+        defaultGateway:
+          type: string
+          nullable: true
+          enum: [yoco, payfast, null]
+        gateways:
+          type: array
+          items:
+            type: object
+            required: [id, name, available, description, methods]
+            properties:
+              id:
+                type: string
+                enum: [yoco, payfast]
+              name:
+                type: string
+              available:
+                type: boolean
+              description:
+                type: string
+              methods:
+                type: array
+                items:
+                  type: string
 
     RetryCheckoutInput:
       type: object

@@ -27,6 +27,7 @@ import type {
   AdminPaymentSettings,
   AdminStats,
   Category,
+  CheckoutOptions,
   CheckoutRequest,
   CheckoutResponse,
   CreateCategoryRequest,
@@ -1799,6 +1800,83 @@ export const useCreateCheckout = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateCheckoutMutationOptions(options));
     }
+
+export const getGetCheckoutOptionsUrl = () => {
+
+
+
+
+  return `/api/checkout/options`
+}
+
+/**
+ * @summary List available hosted payment gateways
+ */
+export const getCheckoutOptions = async ( options?: RequestInit): Promise<CheckoutOptions> => {
+
+  return customFetch<CheckoutOptions>(getGetCheckoutOptionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheckoutOptionsQueryKey = () => {
+    return [
+    `/api/checkout/options`
+    ] as const;
+    }
+
+
+export const getGetCheckoutOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getCheckoutOptions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckoutOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheckoutOptionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheckoutOptions>>> = ({ signal }) => getCheckoutOptions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheckoutOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheckoutOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getCheckoutOptions>>>
+export type GetCheckoutOptionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List available hosted payment gateways
+ */
+
+export function useGetCheckoutOptions<TData = Awaited<ReturnType<typeof getCheckoutOptions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheckoutOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheckoutOptionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getHandlePayfastNotifyUrl = () => {
 
