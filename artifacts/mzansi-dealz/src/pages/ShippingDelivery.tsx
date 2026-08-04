@@ -68,7 +68,7 @@ export default function ShippingDelivery() {
           <h2 className="text-xl font-bold mb-4">How Delivery Works</h2>
           <div className="space-y-3">
             {[
-              { title: "Order Placed", body: "You place your order and complete payment via PayFast." },
+              { title: "Order Placed", body: "You place your order and complete payment through our secure hosted checkout." },
               { title: "Order Confirmed", body: "You receive an email confirmation with your order number. We process orders Monday–Friday." },
               { title: "Dispatched", body: "Your order is packed and handed to our courier. You'll receive a tracking number via email or SMS." },
               { title: "Out for Delivery", body: "You'll receive a notification when your order is out for delivery." },

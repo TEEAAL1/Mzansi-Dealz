@@ -1,26 +1,33 @@
-import { pgTable, serial, text, numeric, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const ordersTable = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  orderNumber: text("order_number").notNull().unique(),
-  customerName: text("customer_name").notNull(),
-  customerEmail: text("customer_email").notNull(),
-  customerPhone: text("customer_phone").notNull(),
-  deliveryAddress: text("delivery_address").notNull(),
-  deliveryCity: text("delivery_city").notNull(),
-  deliveryProvince: text("delivery_province").notNull(),
-  deliveryPostalCode: text("delivery_postal_code").notNull(),
-  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
-  deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 }).notNull(),
-  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
-  status: text("status").notNull().default("pending"),
-  payfastPaymentId: text("payfast_payment_id"),
-  payfastReference: text("payfast_reference"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const ordersTable = pgTable(
+  "orders",
+  {
+    id: serial("id").primaryKey(),
+    orderNumber: text("order_number").notNull().unique(),
+    customerName: text("customer_name").notNull(),
+    customerEmail: text("customer_email").notNull(),
+    customerPhone: text("customer_phone").notNull(),
+    deliveryAddress: text("delivery_address").notNull(),
+    deliveryCity: text("delivery_city").notNull(),
+    deliveryProvince: text("delivery_province").notNull(),
+    deliveryPostalCode: text("delivery_postal_code").notNull(),
+    subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
+    deliveryFee: numeric("delivery_fee", { precision: 10, scale: 2 }).notNull(),
+    total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+    status: text("status").notNull().default("pending"),
+    checkoutIdempotencyKey: text("checkout_idempotency_key"),
+    payfastPaymentId: text("payfast_payment_id"),
+    payfastReference: text("payfast_reference"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    checkoutIdempotencyIndex: uniqueIndex("orders_checkout_idempotency_idx").on(table.checkoutIdempotencyKey),
+  }),
+);
 
 export const orderItemsTable = pgTable("order_items", {
   id: serial("id").primaryKey(),

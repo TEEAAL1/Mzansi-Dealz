@@ -89,8 +89,91 @@ export interface AdminOrderList {
   total: number;
 }
 
+export type UpdateOrderStatusRequestStatus = typeof UpdateOrderStatusRequestStatus[keyof typeof UpdateOrderStatusRequestStatus];
+
+
+export const UpdateOrderStatusRequestStatus = {
+  pending: 'pending',
+  awaiting_payment: 'awaiting_payment',
+  paid: 'paid',
+  processing: 'processing',
+  packed: 'packed',
+  shipped: 'shipped',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
+  failed: 'failed',
+} as const;
+
 export interface UpdateOrderStatusRequest {
+  status: UpdateOrderStatusRequestStatus;
+}
+
+export type PaymentSettingsInputCurrency = typeof PaymentSettingsInputCurrency[keyof typeof PaymentSettingsInputCurrency];
+
+
+export const PaymentSettingsInputCurrency = {
+  ZAR: 'ZAR',
+} as const;
+
+export type PaymentSettingsInputDefaultGateway = typeof PaymentSettingsInputDefaultGateway[keyof typeof PaymentSettingsInputDefaultGateway];
+
+
+export const PaymentSettingsInputDefaultGateway = {
+  yoco: 'yoco',
+  payfast: 'payfast',
+} as const;
+
+export interface PaymentSettingsInput {
+  currency: PaymentSettingsInputCurrency;
+  defaultGateway: PaymentSettingsInputDefaultGateway;
+  yocoEnabled: boolean;
+  payfastEnabled: boolean;
+  payfastSandbox: boolean;
+}
+
+export type AdminPaymentSettings = PaymentSettingsInput & {
+  id: number;
+  yocoConfigured: boolean;
+  payfastConfigured: boolean;
+  emailConfigured: boolean;
+  updatedAt: string;
+};
+
+export interface AdminPayment {
+  id: number;
+  orderId: number;
+  gateway: string;
   status: string;
+  /** @nullable */
+  providerPaymentId?: string | null;
+  /** @nullable */
+  providerCheckoutId?: string | null;
+  reference: string;
+  amount: string;
+  currency: string;
+  customerEmail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPaymentList {
+  payments: AdminPayment[];
+}
+
+export interface AdminPaymentTransaction {
+  id: number;
+  paymentId: number;
+  gateway: string;
+  type: string;
+  status: string;
+  /** @nullable */
+  providerReference?: string | null;
+  /** @nullable */
+  amount?: string | null;
+  /** @nullable */
+  currency?: string | null;
+  createdAt: string;
 }
 
 export interface CreateProductRequest {
@@ -120,6 +203,14 @@ export interface CheckoutItem {
   quantity: number;
 }
 
+export type CheckoutRequestGateway = typeof CheckoutRequestGateway[keyof typeof CheckoutRequestGateway];
+
+
+export const CheckoutRequestGateway = {
+  yoco: 'yoco',
+  payfast: 'payfast',
+} as const;
+
 export interface CheckoutRequest {
   items: CheckoutItem[];
   customerName: string;
@@ -129,15 +220,37 @@ export interface CheckoutRequest {
   deliveryCity: string;
   deliveryProvince: string;
   deliveryPostalCode: string;
+  gateway?: CheckoutRequestGateway;
+  /** @minLength 8 */
+  idempotencyKey?: string;
 }
 
-export type CheckoutResponsePayfastData = {[key: string]: string};
+export type CheckoutResponsePayfastData = {[key: string]: string} | null;
 
 export interface CheckoutResponse {
   orderNumber: string;
   total: number;
-  payfastUrl: string;
-  payfastData: CheckoutResponsePayfastData;
+  gateway: string;
+  paymentReference: string;
+  redirectUrl: string;
+  /** @nullable */
+  yocoCheckoutId?: string | null;
+  /** @nullable */
+  payfastUrl?: string | null;
+  payfastData?: CheckoutResponsePayfastData;
+}
+
+export type RetryCheckoutInputGateway = typeof RetryCheckoutInputGateway[keyof typeof RetryCheckoutInputGateway];
+
+
+export const RetryCheckoutInputGateway = {
+  yoco: 'yoco',
+  payfast: 'payfast',
+} as const;
+
+export interface RetryCheckoutInput {
+  customerEmail: string;
+  gateway?: RetryCheckoutInputGateway;
 }
 
 export interface OrderItem {
@@ -201,5 +314,18 @@ export type ListAdminOrdersParams = {
 status?: string;
 limit?: number;
 offset?: number;
+};
+
+export type ListAdminPaymentTransactions200 = {
+  transactions: AdminPaymentTransaction[];
+};
+
+export type RefundAdminPaymentBody = {
+  /** @minimum 0 */
+  amount?: number;
+};
+
+export type DownloadInvoiceParams = {
+email: string;
 };
 

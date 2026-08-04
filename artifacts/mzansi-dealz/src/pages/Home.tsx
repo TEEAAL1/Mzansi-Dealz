@@ -32,7 +32,7 @@ const CATEGORIES = [
 ];
 
 const TRUST_BADGES = [
-  { icon: ShieldCheck, title: "Secure Checkout", desc: "All payments are SSL-encrypted and processed securely via PayFast." },
+  { icon: ShieldCheck, title: "Secure Checkout", desc: "All payments are SSL-encrypted and processed securely through our hosted payment gateways." },
   { icon: Truck, title: "Fast Nationwide Delivery", desc: "Free delivery over R400. Gauteng R69, Nationwide R99." },
   { icon: Star, title: "Quality Products", desc: "Carefully sourced products that meet our quality standards." },
   { icon: BadgePercent, title: "Great South African Deals", desc: "Up to 60% off everyday items — updated daily." },

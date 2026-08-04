@@ -25,6 +25,7 @@ export default function Checkout() {
   const [, setLocation] = useLocation();
   const { items, subtotal, clearCart, totalItems } = useCart();
   const { mutate: checkout, isPending } = useCreateCheckout();
+  const [checkoutError, setCheckoutError] = useState("");
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -56,18 +57,24 @@ export default function Checkout() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setCheckoutError("");
     checkout({
       data: {
         items: items.map(i => ({ productId: i.productId, quantity: i.quantity })),
-        ...formData
+        ...formData,
+        idempotencyKey: `web-${Date.now()}-${crypto.randomUUID()}`,
       }
     }, {
       onSuccess: (response) => {
+        clearCart();
+        if (response.gateway === "yoco") {
+          window.location.assign(response.redirectUrl);
+          return;
+        }
         const form = document.createElement("form");
         form.method = "POST";
-        form.action = response.payfastUrl;
-        Object.entries(response.payfastData).forEach(([key, value]) => {
+        form.action = response.payfastUrl ?? response.redirectUrl;
+        Object.entries(response.payfastData ?? {}).forEach(([key, value]) => {
           const input = document.createElement("input");
           input.type = "hidden";
           input.name = key;
@@ -75,9 +82,12 @@ export default function Checkout() {
           form.appendChild(input);
         });
         document.body.appendChild(form);
-        clearCart();
         form.submit();
-      }
+      },
+      onError: (error) => {
+        const message = error instanceof Error ? error.message : "We could not start payment. Please try again.";
+        setCheckoutError(message);
+      },
     });
   };
 
@@ -247,13 +257,16 @@ export default function Checkout() {
                 className="w-full h-14 text-lg font-bold tracking-wide shadow-md"
                 disabled={isPending}
               >
-                {isPending ? "PROCESSING..." : "Pay with PayFast"}
+                {isPending ? "PROCESSING..." : "Continue to secure payment"}
               </Button>
+              {checkoutError && (
+                <p role="alert" className="mt-3 text-sm text-destructive text-center">{checkoutError}</p>
+              )}
               
               <div className="mt-6 space-y-3 pt-6 border-t border-border text-center">
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                   <Lock className="w-3 h-3" />
-                  <span>Secure payment via PayFast. 7-day returns. Free delivery over R400.</span>
+                  <span>Secure hosted payment. 7-day returns. Free delivery over R400.</span>
                 </div>
               </div>
             </div>

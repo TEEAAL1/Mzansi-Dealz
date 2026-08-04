@@ -222,7 +222,106 @@ export const UpdateOrderStatusParams = zod.object({
 })
 
 export const UpdateOrderStatusBody = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['pending', 'awaiting_payment', 'paid', 'processing', 'packed', 'shipped', 'delivered', 'cancelled', 'refunded', 'failed'])
+})
+
+
+/**
+ * @summary Get payment gateway settings and configuration status
+ */
+export const GetAdminPaymentSettingsResponse = zod.object({
+  "currency": zod.enum(['ZAR']),
+  "defaultGateway": zod.enum(['yoco', 'payfast']),
+  "yocoEnabled": zod.boolean(),
+  "payfastEnabled": zod.boolean(),
+  "payfastSandbox": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "yocoConfigured": zod.boolean(),
+  "payfastConfigured": zod.boolean(),
+  "emailConfigured": zod.boolean(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary Update payment gateway settings
+ */
+export const UpdateAdminPaymentSettingsBody = zod.object({
+  "currency": zod.enum(['ZAR']),
+  "defaultGateway": zod.enum(['yoco', 'payfast']),
+  "yocoEnabled": zod.boolean(),
+  "payfastEnabled": zod.boolean(),
+  "payfastSandbox": zod.boolean()
+})
+
+export const UpdateAdminPaymentSettingsResponse = zod.object({
+  "currency": zod.enum(['ZAR']),
+  "defaultGateway": zod.enum(['yoco', 'payfast']),
+  "yocoEnabled": zod.boolean(),
+  "payfastEnabled": zod.boolean(),
+  "payfastSandbox": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "yocoConfigured": zod.boolean(),
+  "payfastConfigured": zod.boolean(),
+  "emailConfigured": zod.boolean(),
+  "updatedAt": zod.coerce.date()
+}))
+
+
+/**
+ * @summary List payment records
+ */
+export const ListAdminPaymentsResponse = zod.object({
+  "payments": zod.array(zod.object({
+  "id": zod.number(),
+  "orderId": zod.number(),
+  "gateway": zod.string(),
+  "status": zod.string(),
+  "providerPaymentId": zod.string().nullish(),
+  "providerCheckoutId": zod.string().nullish(),
+  "reference": zod.string(),
+  "amount": zod.string(),
+  "currency": zod.string(),
+  "customerEmail": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary List payment transactions
+ */
+export const ListAdminPaymentTransactionsResponse = zod.object({
+  "transactions": zod.array(zod.object({
+  "id": zod.number(),
+  "paymentId": zod.number(),
+  "gateway": zod.string(),
+  "type": zod.string(),
+  "status": zod.string(),
+  "providerReference": zod.string().nullish(),
+  "amount": zod.string().nullish(),
+  "currency": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Refund a payment
+ */
+export const RefundAdminPaymentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const refundAdminPaymentBodyAmountMin = 0;
+
+
+
+export const RefundAdminPaymentBody = zod.object({
+  "amount": zod.number().min(refundAdminPaymentBodyAmountMin).optional()
 })
 
 
@@ -316,8 +415,12 @@ export const DeleteCategoryParams = zod.object({
 
 
 /**
- * @summary Create an order and get PayFast payment data
+ * @summary Create an order and get hosted payment redirect data
  */
+export const createCheckoutBodyIdempotencyKeyMin = 8;
+
+
+
 export const CreateCheckoutBody = zod.object({
   "items": zod.array(zod.object({
   "productId": zod.number(),
@@ -329,14 +432,56 @@ export const CreateCheckoutBody = zod.object({
   "deliveryAddress": zod.string(),
   "deliveryCity": zod.string(),
   "deliveryProvince": zod.string(),
-  "deliveryPostalCode": zod.string()
+  "deliveryPostalCode": zod.string(),
+  "gateway": zod.enum(['yoco', 'payfast']).optional(),
+  "idempotencyKey": zod.string().min(createCheckoutBodyIdempotencyKeyMin).optional()
 })
 
 export const CreateCheckoutResponse = zod.object({
   "orderNumber": zod.string(),
   "total": zod.number(),
-  "payfastUrl": zod.string(),
-  "payfastData": zod.record(zod.string(), zod.string())
+  "gateway": zod.string(),
+  "paymentReference": zod.string(),
+  "redirectUrl": zod.string(),
+  "yocoCheckoutId": zod.string().nullish(),
+  "payfastUrl": zod.string().nullish(),
+  "payfastData": zod.record(zod.string(), zod.string()).nullish()
+})
+
+
+/**
+ * @summary Retry payment for an unpaid order
+ */
+export const RetryCheckoutParams = zod.object({
+  "orderNumber": zod.coerce.string()
+})
+
+export const RetryCheckoutBody = zod.object({
+  "customerEmail": zod.string().email(),
+  "gateway": zod.enum(['yoco', 'payfast']).optional()
+})
+
+export const RetryCheckoutResponse = zod.object({
+  "orderNumber": zod.string(),
+  "total": zod.number(),
+  "gateway": zod.string(),
+  "paymentReference": zod.string(),
+  "redirectUrl": zod.string(),
+  "yocoCheckoutId": zod.string().nullish(),
+  "payfastUrl": zod.string().nullish(),
+  "payfastData": zod.record(zod.string(), zod.string()).nullish()
+})
+
+
+/**
+ * @summary Download an order invoice
+ */
+export const DownloadInvoiceParams = zod.object({
+  "orderNumber": zod.coerce.string()
+})
+
+export const DownloadInvoiceQueryParams = zod.object({
+  "email": zod.coerce.string().email()
 })
 
 

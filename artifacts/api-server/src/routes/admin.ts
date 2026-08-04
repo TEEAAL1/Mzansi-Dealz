@@ -1,5 +1,13 @@
 import { Router } from "express";
-import { db, productsTable, ordersTable, orderItemsTable, categoriesTable } from "@workspace/db";
+import {
+  db,
+  productsTable,
+  ordersTable,
+  orderItemsTable,
+  categoriesTable,
+  paymentsTable,
+  paymentTransactionsTable,
+} from "@workspace/db";
 import { eq, desc, sql, count, sum } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -9,6 +17,13 @@ import {
   requireAdmin,
   verifyAdminPassword,
 } from "../middlewares/admin-auth";
+import {
+  createRefund,
+  getPaymentSettings,
+  listPayments,
+  savePaymentSettings,
+} from "../services/paymentService";
+import { refundYocoCheckout } from "../services/yocoService";
 
 const router = Router();
 
@@ -151,7 +166,18 @@ router.put("/admin/orders/:orderNumber/status", requireAdmin, async (req, res) =
   const { orderNumber } = req.params;
   const { status } = req.body as { status?: string };
 
-  const validStatuses = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"];
+  const validStatuses = [
+    "pending",
+    "awaiting_payment",
+    "paid",
+    "processing",
+    "packed",
+    "shipped",
+    "delivered",
+    "cancelled",
+    "refunded",
+    "failed",
+  ];
   if (!status || !validStatuses.includes(status)) {
     res.status(400).json({ error: `Status must be one of: ${validStatuses.join(", ")}` });
     return;
@@ -169,6 +195,108 @@ router.put("/admin/orders/:orderNumber/status", requireAdmin, async (req, res) =
   }
 
   res.json({ success: true, status });
+});
+
+router.get("/admin/payment-settings", requireAdmin, async (_req, res) => {
+  const settings = await getPaymentSettings();
+  res.json({
+    ...settings,
+    yocoConfigured: Boolean(process.env.YOCO_SECRET_KEY && process.env.YOCO_WEBHOOK_SECRET),
+    payfastConfigured: Boolean(process.env.PAYFAST_MERCHANT_ID && process.env.PAYFAST_MERCHANT_KEY),
+    emailConfigured: Boolean(process.env.EMAIL_PROVIDER),
+  });
+});
+
+router.put("/admin/payment-settings", requireAdmin, async (req, res) => {
+  const parsed = z.object({
+    currency: z.literal("ZAR"),
+    defaultGateway: z.enum(["yoco", "payfast"]),
+    yocoEnabled: z.boolean(),
+    payfastEnabled: z.boolean(),
+    payfastSandbox: z.boolean(),
+  }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payment settings", details: parsed.error.issues });
+    return;
+  }
+  if (parsed.data.defaultGateway === "yoco" && !process.env.YOCO_SECRET_KEY) {
+    res.status(400).json({ error: "Yoco cannot be selected until YOCO_SECRET_KEY is configured." });
+    return;
+  }
+  if (parsed.data.defaultGateway === "payfast" && !process.env.PAYFAST_MERCHANT_ID) {
+    res.status(400).json({ error: "PayFast cannot be selected until its merchant credentials are configured." });
+    return;
+  }
+  res.json(await savePaymentSettings(parsed.data));
+});
+
+router.get("/admin/payments", requireAdmin, async (_req, res) => {
+  res.json({ payments: await listPayments() });
+});
+
+router.get("/admin/transactions", requireAdmin, async (_req, res) => {
+  res.json({
+    transactions: await db.select().from(paymentTransactionsTable)
+      .orderBy(desc(paymentTransactionsTable.createdAt)).limit(200),
+  });
+});
+
+router.get("/admin/payments/export.csv", requireAdmin, async (_req, res) => {
+  const payments = await listPayments();
+  const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
+  const lines = [
+    ["id", "reference", "gateway", "status", "providerPaymentId", "amount", "currency", "customerEmail", "createdAt"].map(escape).join(","),
+    ...payments.map((payment) => [
+      payment.id,
+      payment.reference,
+      payment.gateway,
+      payment.status,
+      payment.providerPaymentId,
+      payment.amount,
+      payment.currency,
+      payment.customerEmail,
+      payment.createdAt.toISOString(),
+    ].map(escape).join(",")),
+  ];
+  res.type("text/csv").setHeader("Content-Disposition", "attachment; filename=\"mzansi-payments.csv\"").send(lines.join("\n"));
+});
+
+router.post("/admin/payments/:id/refund", requireAdmin, async (req, res) => {
+  const amountSchema = z.object({ amount: z.number().positive().optional() }).safeParse(req.body ?? {});
+  if (!amountSchema.success) {
+    res.status(400).json({ error: "Refund amount must be a positive number" });
+    return;
+  }
+  const paymentId = Number(req.params.id);
+  const [payment] = await db.select().from(paymentsTable).where(eq(paymentsTable.id, paymentId)).limit(1);
+  if (!payment) {
+    res.status(404).json({ error: "Payment not found" });
+    return;
+  }
+  if (payment.status !== "paid") {
+    res.status(400).json({ error: "Only paid payments can be refunded" });
+    return;
+  }
+  const amount = amountSchema.data.amount ?? Number(payment.amount);
+  if (amount > Number(payment.amount)) {
+    res.status(400).json({ error: "Refund cannot exceed the payment amount" });
+    return;
+  }
+  if (payment.gateway !== "yoco") {
+    res.status(409).json({ error: "PayFast refunds must be completed in the PayFast merchant dashboard." });
+    return;
+  }
+  if (!payment.providerCheckoutId) {
+    res.status(400).json({ error: "This payment has no provider checkout reference." });
+    return;
+  }
+  try {
+    const result = await refundYocoCheckout(payment.providerCheckoutId, Math.round(amount * 100));
+    const refund = await createRefund(payment.id, amount, payment.gateway, result.refundId, result.status === "succeeded" ? "succeeded" : "pending");
+    res.json({ refund, provider: result });
+  } catch (error) {
+    res.status(502).json({ error: error instanceof Error ? error.message : "Refund failed" });
+  }
 });
 
 const CreateProductSchema = z.object({

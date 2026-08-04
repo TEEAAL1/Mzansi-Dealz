@@ -1,40 +1,152 @@
-import { Router } from "express";
-import crypto from "crypto";
-import https from "https";
-import { db, ordersTable, orderItemsTable, productsTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { Router, type Request } from "express";
+import crypto from "node:crypto";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { db, ordersTable, orderItemsTable, productsTable, paymentsTable } from "@workspace/db";
 import { CreateCheckoutBody } from "@workspace/api-zod";
+import { createYocoCheckout, isYocoConfigured, verifyYocoWebhook } from "../services/yocoService";
+import { buildPayfastData, isPayfastConfigured, verifyPayfastItn } from "../services/payfastService";
+import {
+  getPaymentSettings,
+  hasProcessedEvent,
+  markPaymentFailed,
+  recordEvent,
+  recordPayment,
+  settlePayment,
+} from "../services/paymentService";
+import { sendPaymentEmail } from "../services/emailService";
 
 const router = Router();
 
-const SANDBOX = process.env.PAYFAST_SANDBOX !== "false";
-const MERCHANT_ID = process.env.PAYFAST_MERCHANT_ID ?? "10000100";
-const MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY ?? "46f0cd694581a";
-const PASSPHRASE = process.env.PAYFAST_PASSPHRASE ?? "";
-const PAYFAST_HOST = SANDBOX ? "sandbox.payfast.co.za" : "www.payfast.co.za";
-const PAYFAST_URL = `https://${PAYFAST_HOST}/eng/process`;
-
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
   return `MD-${timestamp}-${random}`;
 }
 
-function buildSignature(data: Record<string, string>, passphrase: string): string {
-  const parts = Object.entries(data)
-    .filter(([, v]) => v !== "" && v !== undefined && v !== null)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%20/g, "+")}`)
-    .join("&");
-
-  const str = passphrase ? `${parts}&passphrase=${encodeURIComponent(passphrase).replace(/%20/g, "+")}` : parts;
-  return crypto.createHash("md5").update(str).digest("hex");
-}
-
-function getSiteUrl(req: Express.Request): string {
+function getSiteUrl(req: Request): string {
+  const configured = process.env.PUBLIC_APP_URL ?? process.env.FRONTEND_ORIGIN;
+  if (configured) return configured.replace(/\/$/, "");
   const domains = process.env.REPLIT_DOMAINS?.split(",")[0];
   if (domains) return `https://${domains}`;
-  const host = (req as any).headers?.host ?? "localhost";
-  return `https://${host}`;
+  return `https://${req.get("host") ?? "localhost"}`;
+}
+
+function toLineItems(items: Array<{ productId: number; quantity: number }>, products: typeof productsTable.$inferSelect[]) {
+  const productMap = new Map(products.map((product) => [product.id, product]));
+  let subtotal = 0;
+  const lineItems: Array<{
+    productId: number;
+    productName: string;
+    productImageUrl: string;
+    price: number;
+    quantity: number;
+    subtotal: number;
+  }> = [];
+
+  for (const item of items) {
+    const product = productMap.get(item.productId);
+    if (!product) throw new Error("One or more products not found");
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) {
+      throw new Error("Each product quantity must be between 1 and 99");
+    }
+    if (product.stockCount !== null && product.stockCount < item.quantity) {
+      throw new Error(`${product.name} does not have enough stock`);
+    }
+    const price = Number(product.price);
+    const lineSubtotal = price * item.quantity;
+    subtotal += lineSubtotal;
+    lineItems.push({
+      productId: product.id,
+      productName: product.name,
+      productImageUrl: product.imageUrl,
+      price,
+      quantity: item.quantity,
+      subtotal: lineSubtotal,
+    });
+  }
+  return { subtotal, lineItems };
+}
+
+async function chooseGateway(requested: string | undefined): Promise<{
+  settings: Awaited<ReturnType<typeof getPaymentSettings>>;
+  gateway: "yoco" | "payfast" | null;
+}> {
+  const settings = await getPaymentSettings();
+  const yocoAvailable = settings.yocoEnabled && isYocoConfigured();
+  const payfastAvailable = settings.payfastEnabled && isPayfastConfigured();
+  const preferred = requested === "yoco" || requested === "payfast" ? requested : settings.defaultGateway;
+  const gateway =
+    preferred === "yoco" && yocoAvailable ? "yoco" :
+    preferred === "payfast" && payfastAvailable ? "payfast" :
+    yocoAvailable ? "yoco" :
+    payfastAvailable ? "payfast" : null;
+  return { settings, gateway };
+}
+
+async function createProviderCheckout(
+  req: Request,
+  order: typeof ordersTable.$inferSelect,
+  items: Array<{ productName: string; quantity: number; price: number | string }>,
+  gateway: "yoco" | "payfast",
+  paymentReference: string,
+) {
+  const settings = await getPaymentSettings();
+  const siteUrl = getSiteUrl(req);
+  const total = Number(order.total);
+  const payment = await recordPayment({
+    orderId: order.id,
+    gateway,
+    reference: paymentReference,
+    amount: total,
+    currency: settings.currency,
+    customerEmail: order.customerEmail,
+  });
+
+  if (gateway === "yoco") {
+    const checkout = await createYocoCheckout({
+      amountCents: Math.round(total * 100),
+      currency: settings.currency,
+      successUrl: `${siteUrl}/order-confirmation/${order.orderNumber}?payment=success`,
+      cancelUrl: `${siteUrl}/order-confirmation/${order.orderNumber}?payment=cancelled`,
+      failureUrl: `${siteUrl}/order-confirmation/${order.orderNumber}?payment=failed`,
+      orderNumber: order.orderNumber,
+      customerEmail: order.customerEmail,
+      idempotencyKey: paymentReference,
+      lineItems: items.map((item) => ({
+        name: item.productName,
+        quantity: item.quantity,
+        amountCents: Math.round(Number(item.price) * 100),
+      })),
+    });
+    await db.update(paymentsTable).set({ providerCheckoutId: checkout.id, updatedAt: new Date() })
+      .where(eq(paymentsTable.id, payment.id));
+    return {
+      gateway,
+      paymentReference,
+      redirectUrl: checkout.redirectUrl,
+      yocoCheckoutId: checkout.id,
+      payfastUrl: null,
+      payfastData: null,
+    };
+  }
+
+  const payfast = buildPayfastData(req, {
+    orderNumber: order.orderNumber,
+    total,
+    customerName: order.customerName,
+    customerEmail: order.customerEmail,
+    customerPhone: order.customerPhone,
+    siteUrl,
+    sandbox: settings.payfastSandbox,
+  });
+  return {
+    gateway,
+    paymentReference,
+    redirectUrl: payfast.url,
+    yocoCheckoutId: null,
+    payfastUrl: payfast.url,
+    payfastData: payfast.data,
+  };
 }
 
 router.post("/checkout", async (req, res) => {
@@ -44,46 +156,37 @@ router.post("/checkout", async (req, res) => {
     return;
   }
 
-  const body = parsed.data;
+  try {
+    const body = parsed.data;
+    if (body.items.length === 0) {
+      res.status(400).json({ error: "Your cart is empty" });
+      return;
+    }
+    const selected = await chooseGateway(body.gateway);
+    if (!selected.gateway) {
+      res.status(503).json({ error: "No payment gateway is configured. An administrator must configure Yoco or PayFast." });
+      return;
+    }
+    if (body.idempotencyKey) {
+      const existing = await db.select({ orderNumber: ordersTable.orderNumber })
+        .from(ordersTable).where(eq(ordersTable.checkoutIdempotencyKey, body.idempotencyKey)).limit(1);
+      if (existing[0]) {
+        res.status(409).json({ error: "This checkout has already been created", orderNumber: existing[0].orderNumber });
+        return;
+      }
+    }
 
-  // Fetch products for the items in cart
-  const productIds = body.items.map((i) => i.productId);
-  const products = await db.select().from(productsTable).where(inArray(productsTable.id, productIds));
-
-  if (products.length !== productIds.length) {
-    res.status(400).json({ error: "One or more products not found" });
-    return;
-  }
-
-  const productMap = new Map(products.map((p) => [p.id, p]));
-
-  // Calculate totals
-  let subtotal = 0;
-  const lineItems: Array<{ productId: number; productName: string; productImageUrl: string; price: number; quantity: number; subtotal: number }> = [];
-
-  for (const item of body.items) {
-    const product = productMap.get(item.productId)!;
-    const lineSubtotal = Number(product.price) * item.quantity;
-    subtotal += lineSubtotal;
-    lineItems.push({
-      productId: product.id,
-      productName: product.name,
-      productImageUrl: product.imageUrl,
-      price: Number(product.price),
-      quantity: item.quantity,
-      subtotal: lineSubtotal,
-    });
-  }
-
-  const deliveryFee = subtotal >= 400 ? 0 : 69;
-  const total = subtotal + deliveryFee;
-  const orderNumber = generateOrderNumber();
-  const siteUrl = getSiteUrl(req);
-
-  // Save order
-  const [order] = await db
-    .insert(ordersTable)
-    .values({
+    const productIds = [...new Set(body.items.map((item) => item.productId))];
+    const productRows = await db.select().from(productsTable).where(inArray(productsTable.id, productIds));
+    if (productRows.length !== productIds.length) {
+      res.status(400).json({ error: "One or more products not found" });
+      return;
+    }
+    const { subtotal, lineItems } = toLineItems(body.items, productRows);
+    const deliveryFee = subtotal >= 400 ? 0 : 69;
+    const total = subtotal + deliveryFee;
+    const orderNumber = generateOrderNumber();
+    const [order] = await db.insert(ordersTable).values({
       orderNumber,
       customerName: body.customerName,
       customerEmail: body.customerEmail,
@@ -95,102 +198,135 @@ router.post("/checkout", async (req, res) => {
       subtotal: subtotal.toFixed(2),
       deliveryFee: deliveryFee.toFixed(2),
       total: total.toFixed(2),
-      status: "pending",
-    })
-    .returning();
-
-  await db.insert(orderItemsTable).values(
-    lineItems.map((li) => ({
+      status: "awaiting_payment",
+      checkoutIdempotencyKey: body.idempotencyKey ?? null,
+    }).returning();
+    await db.insert(orderItemsTable).values(lineItems.map((item) => ({
       orderId: order.id,
-      productId: li.productId,
-      productName: li.productName,
-      productImageUrl: li.productImageUrl,
-      price: li.price.toFixed(2),
-      quantity: li.quantity,
-      subtotal: li.subtotal.toFixed(2),
-    }))
-  );
+      productId: item.productId,
+      productName: item.productName,
+      productImageUrl: item.productImageUrl,
+      price: item.price.toFixed(2),
+      quantity: item.quantity,
+      subtotal: item.subtotal.toFixed(2),
+    })));
 
-  // Build PayFast form data
-  const nameParts = body.customerName.trim().split(" ");
-  const nameFirst = nameParts[0];
-  const nameLast = nameParts.slice(1).join(" ") || nameParts[0];
+    const paymentReference = orderNumber;
+    const result = await createProviderCheckout(req, order, lineItems, selected.gateway, paymentReference);
+    await sendPaymentEmail("order_confirmation", order.customerEmail, order.orderNumber);
+    req.log.info({ orderNumber, gateway: selected.gateway, total }, "Checkout created");
+    res.json({ orderNumber, total, ...result });
+  } catch (error) {
+    req.log.error({ err: error }, "Checkout creation failed");
+    res.status(400).json({ error: error instanceof Error ? error.message : "Could not create checkout" });
+  }
+});
 
-  const payfastData: Record<string, string> = {
-    merchant_id: MERCHANT_ID,
-    merchant_key: MERCHANT_KEY,
-    return_url: `${siteUrl}/order-confirmation/${orderNumber}`,
-    cancel_url: `${siteUrl}/checkout`,
-    notify_url: `${siteUrl}/api/checkout/notify`,
-    name_first: nameFirst,
-    name_last: nameLast,
-    email_address: body.customerEmail,
-    cell_number: body.customerPhone.replace(/\D/g, ""),
-    m_payment_id: orderNumber,
-    amount: total.toFixed(2),
-    item_name: `MzansiDealz Order ${orderNumber}`,
-    item_description: `${lineItems.length} item(s) from MzansiDealz`,
-    email_confirmation: "1",
-    confirmation_address: body.customerEmail,
-  };
-
-  // Generate signature
-  const signature = buildSignature(payfastData, PASSPHRASE);
-  payfastData.signature = signature;
-
-  req.log.info({ orderNumber, total, sandbox: SANDBOX }, "Checkout created");
-
-  res.json({
-    orderNumber,
-    total,
-    payfastUrl: PAYFAST_URL,
-    payfastData,
-  });
+router.post("/checkout/retry/:orderNumber", async (req, res) => {
+  const email = typeof req.body?.customerEmail === "string" ? req.body.customerEmail.trim().toLowerCase() : "";
+  if (!email) {
+    res.status(400).json({ error: "Customer email is required to retry payment" });
+    return;
+  }
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, req.params.orderNumber)).limit(1);
+  if (!order || order.customerEmail.toLowerCase() !== email) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  if (order.status === "paid") {
+    res.status(409).json({ error: "This order is already paid" });
+    return;
+  }
+  const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+  const selected = await chooseGateway(typeof req.body?.gateway === "string" ? req.body.gateway : undefined);
+  if (!selected.gateway) {
+    res.status(503).json({ error: "No payment gateway is configured" });
+    return;
+  }
+  try {
+    const result = await createProviderCheckout(req, order, items, selected.gateway, `${order.orderNumber}-${Date.now()}`);
+    res.json({ orderNumber: order.orderNumber, total: Number(order.total), ...result });
+  } catch (error) {
+    res.status(502).json({ error: error instanceof Error ? error.message : "Could not retry payment" });
+  }
 });
 
 router.post("/checkout/notify", async (req, res) => {
-  // Always respond 200 immediately to PayFast
   res.status(200).send("OK");
-
   try {
-    const data: Record<string, string> = req.body;
+    const settings = await getPaymentSettings();
+    if (!(await verifyPayfastItn(req, settings.payfastSandbox))) {
+      req.log.warn("Rejected invalid PayFast ITN");
+      return;
+    }
+    const data = req.body as Record<string, string>;
     const orderNumber = data.m_payment_id;
-    const paymentStatus = data.payment_status;
-    const pfPaymentId = data.pf_payment_id;
-
     if (!orderNumber) return;
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
+    if (!order) return;
+    const [payment] = await db.select().from(paymentsTable).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "payfast"))).orderBy(desc(paymentsTable.createdAt)).limit(1);
+    if (!payment) return;
+    if (data.payment_status === "COMPLETE") {
+      await settlePayment(payment.reference, data.pf_payment_id);
+    } else if (data.payment_status === "FAILED" || data.payment_status === "CANCELLED") {
+      await markPaymentFailed(payment.reference);
+    }
+    await recordEvent("payfast", data.pf_payment_id ?? `${orderNumber}:${data.payment_status}`, "itn", data, orderNumber);
+  } catch (error) {
+    req.log.error({ err: error }, "PayFast ITN processing failed");
+  }
+});
 
-    const status = paymentStatus === "COMPLETE" ? "paid" : "cancelled";
-
-    await db
-      .update(ordersTable)
-      .set({
-        status,
-        payfastPaymentId: pfPaymentId ?? null,
-        payfastReference: data.pf_payment_id ?? null,
-        updatedAt: new Date(),
-      })
-      .where(eq(ordersTable.orderNumber, orderNumber));
-
-    req.log.info({ orderNumber, paymentStatus, pfPaymentId }, "PayFast ITN processed");
-  } catch (err) {
-    req.log.error({ err }, "PayFast ITN error");
+router.post("/webhooks/yoco", async (req, res) => {
+  const rawBody = (req as Request & { rawBody?: Buffer }).rawBody;
+  if (!rawBody) {
+    res.status(400).json({ error: "Raw webhook body is required" });
+    return;
+  }
+  try {
+    if (!verifyYocoWebhook(rawBody, req.headers)) {
+      res.status(400).json({ error: "Invalid webhook signature" });
+      return;
+    }
+    const event = req.body as { id?: string; type?: string; payload?: Record<string, unknown> };
+    if (!event.id || await hasProcessedEvent("yoco", event.id)) {
+      res.status(200).json({ received: true });
+      return;
+    }
+    const payload = event.payload ?? {};
+    const metadata = (payload.metadata ?? {}) as Record<string, unknown>;
+    const orderNumber = String(metadata.orderNumber ?? payload.clientReferenceId ?? payload.externalId ?? "");
+    const paymentId = typeof payload.paymentId === "string" ? payload.paymentId : undefined;
+    if (orderNumber && (event.type === "payment.succeeded" || event.type === "checkout.completed" || event.type === "payment.success")) {
+      const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
+      if (order) {
+        const [payment] = await db.select().from(paymentsTable).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "yoco"))).orderBy(desc(paymentsTable.createdAt)).limit(1);
+        if (payment) await settlePayment(payment.reference, paymentId);
+      }
+    } else if (orderNumber && (event.type === "payment.failed" || event.type === "checkout.failed")) {
+      const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
+      if (order) {
+        const [payment] = await db.select().from(paymentsTable).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "yoco"))).orderBy(desc(paymentsTable.createdAt)).limit(1);
+        if (payment) await markPaymentFailed(payment.reference);
+      }
+    }
+    await recordEvent("yoco", event.id, event.type ?? "unknown", event, orderNumber || undefined);
+    res.status(200).json({ received: true });
+  } catch (error) {
+    req.log.error({ err: error }, "Yoco webhook processing failed");
+    res.status(400).json({ error: "Webhook processing failed" });
   }
 });
 
 router.get("/orders/:orderNumber", async (req, res) => {
   const { orderNumber } = req.params;
-
   const orders = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
-
   if (!orders.length) {
     res.status(404).json({ error: "Order not found" });
     return;
   }
-
   const order = orders[0];
   const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
-
   res.json({
     id: order.id,
     orderNumber: order.orderNumber,
@@ -206,17 +342,31 @@ router.get("/orders/:orderNumber", async (req, res) => {
     total: Number(order.total),
     status: order.status,
     payfastPaymentId: order.payfastPaymentId,
-    items: items.map((i) => ({
-      id: i.id,
-      productId: i.productId,
-      productName: i.productName,
-      productImageUrl: i.productImageUrl,
-      price: Number(i.price),
-      quantity: i.quantity,
-      subtotal: Number(i.subtotal),
+    items: items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.productName,
+      productImageUrl: item.productImageUrl,
+      price: Number(item.price),
+      quantity: item.quantity,
+      subtotal: Number(item.subtotal),
     })),
     createdAt: order.createdAt.toISOString(),
   });
+});
+
+router.get("/orders/:orderNumber/invoice", async (req, res) => {
+  const email = typeof req.query.email === "string" ? req.query.email.toLowerCase() : "";
+  const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, req.params.orderNumber)).limit(1);
+  if (!order || email !== order.customerEmail.toLowerCase()) {
+    res.status(404).json({ error: "Invoice not found" });
+    return;
+  }
+  const items = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+  const escape = (value: string) => value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] ?? character);
+  const rows = items.map((item) => `<tr><td>${escape(item.productName)}</td><td>${item.quantity}</td><td>R ${Number(item.subtotal).toFixed(2)}</td></tr>`).join("");
+  res.setHeader("Content-Disposition", `attachment; filename="invoice-${order.orderNumber}.html"`);
+  res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${escape(order.orderNumber)}</title><style>body{font-family:Arial;max-width:760px;margin:40px auto;color:#222}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ddd;padding:10px;text-align:left}.total{font-size:20px;font-weight:bold;text-align:right;margin-top:24px}</style></head><body><h1>MzansiDealz</h1><p>Invoice: ${escape(order.orderNumber)}<br>Customer: ${escape(order.customerName)}<br>Email: ${escape(order.customerEmail)}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table><p class="total">Total: R ${Number(order.total).toFixed(2)}</p></body></html>`);
 });
 
 export default router;

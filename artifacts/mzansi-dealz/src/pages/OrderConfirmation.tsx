@@ -1,11 +1,13 @@
-import { useGetOrder } from "@workspace/api-client-react";
+import { useGetOrder, apiUrl } from "@workspace/api-client-react";
 import { formatZAR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CheckCircle2, Clock, XCircle, ShoppingBag, MapPin, Package } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, ShoppingBag, MapPin, Package, RefreshCw, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 export default function OrderConfirmation({ params }: { params: { orderNumber: string } }) {
+  const [retrying, setRetrying] = useState(false);
   const { data: order, isLoading, error } = useGetOrder(params.orderNumber, {
     query: {
       enabled: !!params.orderNumber,
@@ -42,9 +44,25 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
     );
   }
 
-  const isPending = order.status === "pending";
+  const isPending = order.status === "pending" || order.status === "awaiting_payment";
   const isPaid = order.status === "paid";
-  const isCancelled = order.status === "cancelled";
+  const isFailed = order.status === "failed" || order.status === "cancelled";
+
+  const retryPayment = async () => {
+    setRetrying(true);
+    try {
+      const response = await fetch(apiUrl(`/api/checkout/retry/${encodeURIComponent(order.orderNumber)}`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerEmail: order.customerEmail }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not retry payment");
+      window.location.assign(data.redirectUrl);
+    } catch {
+      setRetrying(false);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -71,7 +89,7 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           {isPending && `Your payment is being confirmed. We'll email you at ${order.customerEmail} once confirmed.`}
           {isPaid && "Payment confirmed! Your order is being packed for delivery."}
-          {isCancelled && "This order has been cancelled."}
+          {isFailed && "Payment was not completed. You can securely try again below."}
         </p>
       </div>
 
@@ -142,6 +160,20 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
             </div>
           </div>
 
+          {isFailed && (
+            <Button size="lg" className="w-full h-14 font-bold" onClick={retryPayment} disabled={retrying}>
+              <RefreshCw className={`w-5 h-5 mr-2 ${retrying ? "animate-spin" : ""}`} />
+              {retrying ? "Starting payment..." : "Try payment again"}
+            </Button>
+          )}
+          {isPaid && (
+            <Button asChild variant="outline" size="lg" className="w-full h-14 font-bold">
+              <a href={apiUrl(`/api/orders/${encodeURIComponent(order.orderNumber)}/invoice?email=${encodeURIComponent(order.customerEmail)}`)}>
+                <FileText className="w-5 h-5 mr-2" />
+                Download invoice
+              </a>
+            </Button>
+          )}
           <Button asChild size="lg" className="w-full h-14 font-bold">
             <Link href="/shop">
               <ShoppingBag className="w-5 h-5 mr-2" />

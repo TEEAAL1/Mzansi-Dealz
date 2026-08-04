@@ -32,7 +32,7 @@ export default function TermsConditions() {
             <h2 className="text-xl font-bold mb-3">3. Orders and Payment</h2>
             <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
               <li>Orders are confirmed only once payment has been successfully processed.</li>
-              <li>We accept payment via PayFast (Instant EFT, Capitec Pay, Visa, Mastercard).</li>
+              <li>We accept payment through the hosted gateways shown at checkout.</li>
               <li>Payment must be completed in full before any order is processed and dispatched.</li>
               <li>We reserve the right to refuse or cancel any order at our discretion.</li>
             </ul>

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
-const STATUSES = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"];
+const STATUSES = ["pending", "awaiting_payment", "paid", "processing", "packed", "shipped", "delivered", "cancelled", "refunded", "failed"];
 
 export default function AdminOrders() {
   const headers = useAdminHeaders();
@@ -24,11 +24,11 @@ export default function AdminOrders() {
     { request: { headers } }
   );
 
-  const handleStatusChange = async (orderId: number, newStatus: string) => {
+  const handleStatusChange = async (orderNumber: string, newStatus: string) => {
     try {
-      await updateOrderStatus(orderId.toString(), { status: newStatus as any }, { headers });
+      await updateOrderStatus(orderNumber, { status: newStatus as any }, { headers });
       queryClient.invalidateQueries({ queryKey: getListAdminOrdersQueryKey() });
-      toast({ title: "Status updated", description: `Order #${orderId} marked as ${newStatus}.` });
+      toast({ title: "Status updated", description: `Order ${orderNumber} marked as ${newStatus}.` });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
     }
@@ -125,7 +125,7 @@ export default function AdminOrders() {
                   <TableCell>
                     <Select
                       defaultValue={order.status}
-                      onValueChange={(val) => handleStatusChange(order.id, val)}
+                       onValueChange={(val) => handleStatusChange(order.orderNumber, val)}
                     >
                       <SelectTrigger className={`w-[140px] capitalize h-8 ${getStatusColor(order.status)} border-0 font-medium`}>
                         <SelectValue />

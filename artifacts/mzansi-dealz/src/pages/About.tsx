@@ -52,7 +52,7 @@ export default function About() {
             {
               icon: ShieldCheck,
               title: "Safe & Secure Shopping",
-              body: "We use PayFast — South Africa's leading payment gateway — to process all transactions. Your payment information is encrypted and never stored on our servers.",
+              body: "We use secure hosted payment gateways to process transactions. Your payment information is encrypted and never stored on our servers.",
             },
             {
               icon: Truck,

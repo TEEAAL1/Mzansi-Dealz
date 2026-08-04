@@ -27,6 +27,8 @@ import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminCategories from "@/pages/admin/AdminCategories";
 import AdminProductForm from "@/pages/admin/AdminProductForm";
 import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminPayments from "@/pages/admin/AdminPayments";
+import AdminPaymentSettings from "@/pages/admin/AdminPaymentSettings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +80,8 @@ function AdminRoutes() {
           {(params) => <AdminProductForm params={{ id: params.id }} />}
         </Route>
         <Route path="/orders" component={AdminOrders} />
+        <Route path="/payments" component={AdminPayments} />
+        <Route path="/settings/payments" component={AdminPaymentSettings} />
         <Route component={NotFound} />
       </Switch>
     </AdminLayout>

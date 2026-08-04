@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
             <p className="text-muted-foreground leading-relaxed mb-3">We collect the following types of information:</p>
             <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
               <li><strong className="text-foreground">Personal Identification Information:</strong> Name, email address, phone number, and delivery address when you place an order.</li>
-              <li><strong className="text-foreground">Payment Information:</strong> Payment is processed by PayFast. We do not store your card details on our servers.</li>
+              <li><strong className="text-foreground">Payment Information:</strong> Payment is processed by our hosted payment gateways. We do not store your card details on our servers.</li>
               <li><strong className="text-foreground">Order Information:</strong> Products purchased, order amounts, and order history.</li>
               <li><strong className="text-foreground">Usage Data:</strong> Pages visited, time spent on site, browser type, and device information collected via cookies.</li>
             </ul>
@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
               We do not sell your personal information to third parties. We may share your information with:
             </p>
             <ul className="list-disc pl-5 space-y-2 text-muted-foreground mt-3">
-              <li><strong className="text-foreground">Payment processors</strong> (PayFast) to complete transactions</li>
+              <li><strong className="text-foreground">Payment processors</strong> (such as Yoco or PayFast) to complete transactions</li>
               <li><strong className="text-foreground">Delivery partners</strong> to fulfil and track your orders</li>
               <li><strong className="text-foreground">Legal authorities</strong> when required by law</li>
             </ul>
