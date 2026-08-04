@@ -23,7 +23,7 @@ import {
   listPayments,
   savePaymentSettings,
 } from "../services/paymentService";
-import { refundYocoCheckout } from "../services/yocoService";
+import { isYocoWebhookConfigured, refundYocoCheckout } from "../services/yocoService";
 
 const router = Router();
 
@@ -201,7 +201,8 @@ router.get("/admin/payment-settings", requireAdmin, async (_req, res) => {
   const settings = await getPaymentSettings();
   res.json({
     ...settings,
-    yocoConfigured: Boolean(process.env.YOCO_SECRET_KEY && process.env.YOCO_WEBHOOK_SECRET),
+    yocoConfigured: Boolean(process.env.YOCO_SECRET_KEY),
+    yocoWebhookConfigured: isYocoWebhookConfigured(),
     payfastConfigured: Boolean(process.env.PAYFAST_MERCHANT_ID && process.env.PAYFAST_MERCHANT_KEY),
     emailConfigured: Boolean(process.env.EMAIL_PROVIDER),
   });

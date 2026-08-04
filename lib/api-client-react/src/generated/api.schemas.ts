@@ -135,6 +135,7 @@ export interface PaymentSettingsInput {
 export type AdminPaymentSettings = PaymentSettingsInput & {
   id: number;
   yocoConfigured: boolean;
+  yocoWebhookConfigured: boolean;
   payfastConfigured: boolean;
   emailConfigured: boolean;
   updatedAt: string;

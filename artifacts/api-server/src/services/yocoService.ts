@@ -10,6 +10,10 @@ export function isYocoConfigured() {
   return Boolean(getSecret());
 }
 
+export function isYocoWebhookConfigured() {
+  return Boolean(process.env.YOCO_WEBHOOK_SECRET);
+}
+
 export async function createYocoCheckout(input: {
   amountCents: number;
   currency: string;

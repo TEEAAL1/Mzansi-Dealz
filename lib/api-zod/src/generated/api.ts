@@ -238,6 +238,7 @@ export const GetAdminPaymentSettingsResponse = zod.object({
 }).and(zod.object({
   "id": zod.number(),
   "yocoConfigured": zod.boolean(),
+  "yocoWebhookConfigured": zod.boolean(),
   "payfastConfigured": zod.boolean(),
   "emailConfigured": zod.boolean(),
   "updatedAt": zod.coerce.date()
@@ -264,6 +265,7 @@ export const UpdateAdminPaymentSettingsResponse = zod.object({
 }).and(zod.object({
   "id": zod.number(),
   "yocoConfigured": zod.boolean(),
+  "yocoWebhookConfigured": zod.boolean(),
   "payfastConfigured": zod.boolean(),
   "emailConfigured": zod.boolean(),
   "updatedAt": zod.coerce.date()

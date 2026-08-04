@@ -824,11 +824,13 @@ components:
       allOf:
         - $ref: "#/components/schemas/PaymentSettingsInput"
         - type: object
-          required: [id, yocoConfigured, payfastConfigured, emailConfigured, updatedAt]
+          required: [id, yocoConfigured, yocoWebhookConfigured, payfastConfigured, emailConfigured, updatedAt]
           properties:
             id:
               type: integer
             yocoConfigured:
+              type: boolean
+            yocoWebhookConfigured:
               type: boolean
             payfastConfigured:
               type: boolean

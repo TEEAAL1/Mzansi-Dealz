@@ -14,6 +14,7 @@ type Settings = {
   payfastEnabled: boolean;
   payfastSandbox: boolean;
   yocoConfigured: boolean;
+  yocoWebhookConfigured: boolean;
   payfastConfigured: boolean;
   emailConfigured: boolean;
 };
@@ -25,6 +26,7 @@ const initialSettings: Settings = {
   payfastEnabled: false,
   payfastSandbox: true,
   yocoConfigured: false,
+  yocoWebhookConfigured: false,
   payfastConfigured: false,
   emailConfigured: false,
 };
@@ -85,13 +87,16 @@ export default function AdminPaymentSettings() {
       <Card>
         <CardHeader>
           <CardTitle>Gateway readiness</CardTitle>
-          <CardDescription>Both credentials and webhook secrets are required before a gateway can process payments.</CardDescription>
+          <CardDescription>Yoco checkout uses the live API key. Payment confirmation also requires a Yoco-generated webhook secret.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border p-4">
             <div className="font-semibold">Yoco</div>
             <Badge className={settings.yocoConfigured ? "mt-2 bg-green-100 text-green-800" : "mt-2 bg-yellow-100 text-yellow-800"}>
               {settings.yocoConfigured ? "Configured" : "Credentials needed"}
+            </Badge>
+            <Badge className={settings.yocoWebhookConfigured ? "mt-2 ml-2 bg-green-100 text-green-800" : "mt-2 ml-2 bg-yellow-100 text-yellow-800"}>
+              {settings.yocoWebhookConfigured ? "Webhook secured" : "Webhook registration needed"}
             </Badge>
           </div>
           <div className="rounded-lg border p-4">
