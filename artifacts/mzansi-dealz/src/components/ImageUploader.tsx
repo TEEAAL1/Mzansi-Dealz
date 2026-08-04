@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Upload, ImageIcon, X } from "lucide-react";
-import { apiUrl, getCsrfToken } from "@workspace/api-client-react";
+import { apiUrl, setCsrfToken } from "@workspace/api-client-react";
 
 interface ImageUploaderProps {
   value: string;
@@ -14,6 +14,24 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const refreshAdminCsrfToken = async () => {
+    const sessionResponse = await fetch(apiUrl("/api/admin/session"), {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const session = (await sessionResponse.json().catch(() => ({}))) as {
+      authenticated?: boolean;
+      csrfToken?: string;
+    };
+
+    if (!sessionResponse.ok || !session.authenticated || !session.csrfToken) {
+      throw new Error("Your admin session has expired. Please sign in again.");
+    }
+
+    setCsrfToken(session.csrfToken);
+    return session.csrfToken;
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,12 +44,23 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
       const formData = new FormData();
       formData.append("image", file);
 
-      const res = await fetch(apiUrl("/api/uploads"), {
-        method: "POST",
-        credentials: "include",
-        headers: { "x-csrf-token": getCsrfToken() ?? "" },
-        body: formData,
-      });
+      const upload = (csrfToken: string) =>
+        fetch(apiUrl("/api/uploads"), {
+          method: "POST",
+          credentials: "include",
+          headers: { "x-csrf-token": csrfToken },
+          body: formData,
+        });
+
+      // Read the token from the API session first. This avoids using a stale
+      // browser-side token when the frontend and API are on different hosts.
+      let res = await upload(await refreshAdminCsrfToken());
+
+      // A session can rotate between the session check and upload. Refresh
+      // once and retry rather than making the admin re-enter their password.
+      if (res.status === 403) {
+        res = await upload(await refreshAdminCsrfToken());
+      }
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
