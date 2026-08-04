@@ -47,6 +47,8 @@ const allowedOrigins = normalizeOrigins(
   process.env.CORS_ORIGINS,
   process.env.FRONTEND_ORIGIN,
   process.env.REPLIT_DOMAINS,
+  "https://mzansidealz.com",
+  "https://www.mzansidealz.com",
 );
 app.use(
   cors({
