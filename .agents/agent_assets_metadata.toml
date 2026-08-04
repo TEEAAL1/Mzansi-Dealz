@@ -6,3 +6,10 @@ id = "PzFzgml4gRfaMwRfHO79F"
 uri = "file://artifacts/mzansi-dealz/vercel.json"
 type = "unspecified"
 title = "Vercel Deployment Config"
+
+[[outputs]]
+id = "CaTga4nXnQlcQKZVE9s5K"
+uri = "file://perfectdealz-products.csv"
+type = "table"
+title = "PerfectDealz product catalogue CSV"
+description = "Final imported active catalogue from https://www.perfectdealz.co.za — 6,420 active product rows with the requested 15 columns."
