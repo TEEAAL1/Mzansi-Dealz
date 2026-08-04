@@ -52,3 +52,9 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Product migration runtime exports and downloaded catalogue images
+/perfectdealz-products.csv
+/artifacts/api-server/perfectdealz-products.csv
+/artifacts/api-server/public/perfectdealz-products.csv
+/artifacts/api-server/public/uploads/products/

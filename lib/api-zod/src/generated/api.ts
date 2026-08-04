@@ -437,9 +437,10 @@ export const GetLatestProductImportResponse = zod.object({
 
 
 /**
- * @summary Crawl the authorized PerfectDealz product catalog
+ * @summary Crawl an authorized product catalog
  */
 export const StartProductImportBody = zod.object({
+  "sourceUrl": zod.string().url().describe('Public HTTPS origin of a website the administrator owns or is authorized to migrate'),
   "overwriteExisting": zod.boolean().optional(),
   "skipExisting": zod.boolean().optional(),
   "importImages": zod.boolean().optional()
@@ -488,6 +489,14 @@ export const GetProductImportResponse = zod.object({
  * @summary Import the previewed product migration CSV
  */
 export const ImportProductRunParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Finalize the accepted rows of an in-progress product migration
+ */
+export const FinalizeProductImportParams = zod.object({
   "id": zod.coerce.number()
 })
 

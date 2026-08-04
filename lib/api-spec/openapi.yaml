@@ -408,7 +408,7 @@ paths:
     post:
       operationId: startProductImport
       tags: [admin]
-      summary: Crawl the authorized PerfectDealz product catalog
+      summary: Crawl an authorized product catalog
       requestBody:
         required: false
         content:
@@ -464,6 +464,25 @@ paths:
           description: Import started
         "409":
           description: Run is not ready
+        "401":
+          description: Unauthorized
+
+  /admin/product-import/{id}/finalize:
+    post:
+      operationId: finalizeProductImport
+      tags: [admin]
+      summary: Finalize the accepted rows of an in-progress product migration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Accepted rows finalized
+        "409":
+          description: Run is not currently crawling
         "401":
           description: Unauthorized
 
@@ -1101,7 +1120,12 @@ components:
 
     ProductImportOptions:
       type: object
+      required: [sourceUrl]
       properties:
+        sourceUrl:
+          type: string
+          format: uri
+          description: Public HTTPS origin of a website the administrator owns or is authorized to migrate
         overwriteExisting:
           type: boolean
         skipExisting:

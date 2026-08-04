@@ -1,19 +1,22 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import path from "node:path";
 import { db, categoriesTable, productImportItemsTable, productImportRunsTable, productImportSnapshotsTable, productsTable } from "@workspace/db";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 export const PERFECTDEALZ_ORIGIN = "https://perfectdealz.co.za";
-const PERFECTDEALZ_HOST = "perfectdealz.co.za";
 const SHOPIFY_CDN_HOST = "cdn.shopify.com";
 const USER_AGENT = "MzansiDealz Product Migration/1.0 (authorized owner migration)";
 const PUBLIC_DIR = path.resolve(process.cwd(), "public");
 const PRODUCT_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "products");
 const CSV_PATH = path.join(PUBLIC_DIR, "perfectdealz-products.csv");
+const ROOT_CSV_PATH = path.resolve(process.cwd(), "perfectdealz-products.csv");
+const finalizedRuns = new Set<number>();
 
 export type ProductImportOptions = {
+  sourceUrl: string;
   overwriteExisting: boolean;
   skipExisting: boolean;
   importImages: boolean;
@@ -46,6 +49,7 @@ type ShopifyProduct = {
   images?: ShopifyImage[];
   options?: Array<{ name?: string; values?: string[] }>;
 };
+type ProductSource = { sourceUrl: string; product?: ShopifyProduct };
 
 export type NormalizedProduct = {
   sku: string;
@@ -80,24 +84,62 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function assertAllowedUrl(value: string): URL {
+function isPrivateIp(hostname: string): boolean {
+  if (!isIP(hostname)) return false;
+  if (hostname.includes(":")) {
+    const normalized = hostname.toLowerCase();
+    return normalized === "::1" || normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb");
+  }
+  const octets = hostname.split(".").map(Number);
+  const [first, second] = octets;
+  return first === 10 || first === 127 || first === 0 || (first === 169 && second === 254) || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168);
+}
+
+function assertPublicOrigin(value: string): URL {
   const url = new URL(value);
-  if (url.protocol !== "https:" || url.hostname !== PERFECTDEALZ_HOST) {
-    throw new Error("Product migration is restricted to https://perfectdealz.co.za.");
+  if (url.protocol !== "https:" || url.username || url.password || isPrivateIp(url.hostname) || url.hostname === "localhost" || url.hostname.endsWith(".localhost") || url.hostname.endsWith(".local") || url.hostname.endsWith(".internal")) {
+    throw new Error("Source must be a public HTTPS website without private or local network addressing.");
   }
   return url;
 }
 
-async function fetchText(url: string, attempt = 0): Promise<string> {
-  assertAllowedUrl(url);
+export function normalizeSourceOrigin(value: string): string {
+  const url = assertPublicOrigin(value.trim());
+  if (url.pathname !== "/" || url.search || url.hash) {
+    throw new Error("Source URL must contain only the public website origin, for example https://www.example.com.");
+  }
+  return url.origin;
+}
+
+function sourceHosts(sourceOrigin: string): Set<string> {
+  const hostname = new URL(sourceOrigin).hostname.toLowerCase();
+  return new Set([hostname, hostname.startsWith("www.") ? hostname.slice(4) : `www.${hostname}`]);
+}
+
+function assertSourceUrl(value: string, sourceOrigin: string): URL {
+  const url = assertPublicOrigin(value);
+  if (url.protocol !== "https:" || !sourceHosts(sourceOrigin).has(url.hostname.toLowerCase())) {
+    throw new Error(`Source URL is outside the approved migration origin ${sourceOrigin}.`);
+  }
+  return url;
+}
+
+async function fetchText(url: string, sourceOrigin: string, attempt = 0, redirects = 0): Promise<string> {
+  assertSourceUrl(url, sourceOrigin);
   const response = await fetch(url, {
     headers: { "user-agent": USER_AGENT, accept: "application/json, application/xml, text/html;q=0.9" },
     signal: AbortSignal.timeout(30_000),
+    redirect: "manual",
   });
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    if (!location || redirects >= 5) throw new Error(`Too many redirects while fetching ${url}`);
+    return fetchText(new URL(location, url).toString(), sourceOrigin, attempt, redirects + 1);
+  }
   if ((response.status === 429 || response.status >= 500) && attempt < 5) {
     const retryAfter = Number(response.headers.get("retry-after") ?? 0);
     await sleep(Math.max(retryAfter * 1000, 750 * 2 ** attempt));
-    return fetchText(url, attempt + 1);
+    return fetchText(url, sourceOrigin, attempt + 1, redirects);
   }
   if (!response.ok) {
     throw new Error(`Source returned HTTP ${response.status} for ${url}`);
@@ -166,9 +208,20 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
-function productJsonUrl(sourceUrl: string): string {
-  const url = assertAllowedUrl(sourceUrl);
-  if (!url.pathname.startsWith("/products/")) throw new Error("Only Shopify product pages may be migrated.");
+async function mapWithConcurrency<T>(values: T[], concurrency: number, worker: (value: T) => Promise<void>): Promise<void> {
+  let cursor = 0;
+  const runners = Array.from({ length: Math.min(concurrency, values.length) }, async () => {
+    while (cursor < values.length) {
+      const index = cursor++;
+      await worker(values[index]);
+    }
+  });
+  await Promise.all(runners);
+}
+
+function productJsonUrl(sourceUrl: string, sourceOrigin: string): string | null {
+  const url = assertSourceUrl(sourceUrl, sourceOrigin);
+  if (!url.pathname.startsWith("/products/")) return null;
   url.pathname = `${url.pathname.replace(/\/$/, "")}.json`;
   return url.toString();
 }
@@ -184,15 +237,19 @@ function extractJsonLd(html: string): Record<string, unknown> | null {
   }
 }
 
-async function fetchProduct(sourceUrl: string): Promise<ShopifyProduct> {
+async function fetchProduct(sourceUrl: string, sourceOrigin: string, knownProduct?: ShopifyProduct): Promise<ShopifyProduct> {
+  if (knownProduct?.title) return knownProduct;
   try {
-    const payload = JSON.parse(await fetchText(productJsonUrl(sourceUrl))) as { product?: ShopifyProduct };
-    if (payload.product?.title) return payload.product;
+    const jsonUrl = productJsonUrl(sourceUrl, sourceOrigin);
+    if (jsonUrl) {
+      const payload = JSON.parse(await fetchText(jsonUrl, sourceOrigin)) as { product?: ShopifyProduct };
+      if (payload.product?.title) return payload.product;
+    }
   } catch (error) {
     logger.warn({ err: error, sourceUrl }, "Shopify product JSON unavailable; trying page metadata");
   }
 
-  const html = await fetchText(sourceUrl);
+  const html = await fetchText(sourceUrl, sourceOrigin);
   const jsonLd = extractJsonLd(html);
   if (!jsonLd) throw new Error("No structured product data was found.");
   const offers = Array.isArray(jsonLd.offers) ? jsonLd.offers : [jsonLd.offers];
@@ -284,32 +341,88 @@ function normalizeProduct(product: ShopifyProduct, sourceUrl: string): Normalize
   };
 }
 
-async function getProductSitemapUrls(): Promise<string[]> {
-  const root = await fetchText(`${PERFECTDEALZ_ORIGIN}/sitemap.xml`);
-  const sitemapUrls = [...root.matchAll(/<loc>([^<]*sitemap_products[^<]*)<\/loc>/gi)]
-    .map((match) => decodeEntities(match[1]))
+async function getShopifyCollectionProducts(sourceOrigin: string): Promise<ProductSource[]> {
+  const products: ProductSource[] = [];
+  const seen = new Set<string>();
+  for (let page = 1; page <= 100; page++) {
+    const endpoint = `${sourceOrigin}/collections/all/products.json?limit=250&page=${page}`;
+    const payload = JSON.parse(await fetchText(endpoint, sourceOrigin)) as { products?: ShopifyProduct[] };
+    const batch = payload.products ?? [];
+    if (!batch.length) break;
+    for (const product of batch) {
+      const handle = product.handle?.trim();
+      if (!handle || seen.has(handle)) continue;
+      seen.add(handle);
+      products.push({ sourceUrl: `${sourceOrigin}/products/${encodeURIComponent(handle)}`, product });
+    }
+    if (batch.length < 250) break;
+    await sleep(150);
+  }
+  return products;
+}
+
+async function getProductSources(sourceOrigin: string): Promise<ProductSource[]> {
+  try {
+    const products = await getShopifyCollectionProducts(sourceOrigin);
+    if (products.length) return products;
+  } catch (error) {
+    logger.warn({ err: error, sourceOrigin }, "Shopify collection endpoint unavailable; falling back to sitemap");
+  }
+  return (await getProductSitemapUrls(sourceOrigin)).map((sourceUrl) => ({ sourceUrl }));
+}
+
+async function getProductSitemapUrls(sourceOrigin: string): Promise<string[]> {
+  const root = await fetchText(`${sourceOrigin}/sitemap.xml`, sourceOrigin);
+  const sitemapUrls = [...root.matchAll(/<loc>([^<]+)<\/loc>/gi)]
+    .map((match) => decodeEntities(match[1]).trim())
     .filter((url) => {
       try {
-        assertAllowedUrl(url);
-        return true;
+        const parsed = assertSourceUrl(url, sourceOrigin);
+        return parsed.pathname.toLowerCase().includes("sitemap");
       } catch {
         return false;
       }
     });
   const urls: string[] = [];
-  for (const sitemapUrl of sitemapUrls) {
-    const xml = await fetchText(sitemapUrl);
+  const sitemapQueue = [...sitemapUrls];
+  const visitedSitemaps = new Set<string>();
+  while (sitemapQueue.length) {
+    const sitemapUrl = sitemapQueue.shift()!;
+    if (visitedSitemaps.has(sitemapUrl)) continue;
+    visitedSitemaps.add(sitemapUrl);
+    const xml = await fetchText(sitemapUrl, sourceOrigin);
     for (const match of xml.matchAll(/<loc>([^<]+)<\/loc>/gi)) {
-      const url = decodeEntities(match[1]);
+      const url = decodeEntities(match[1]).trim();
       try {
-        const parsed = assertAllowedUrl(url);
-        if (parsed.pathname.startsWith("/products/")) urls.push(parsed.toString());
+        const parsed = assertSourceUrl(url, sourceOrigin);
+        if (parsed.pathname.toLowerCase().includes("sitemap")) {
+          sitemapQueue.push(parsed.toString());
+        } else if (parsed.pathname.startsWith("/products/") || parsed.pathname.startsWith("/product/")) {
+          urls.push(parsed.toString());
+        }
       } catch {
         // Ignore sitemap entries outside the approved origin.
       }
     }
   }
   return unique(urls);
+}
+
+async function writeRunCsv(runId: number): Promise<{ csvPath: string; rowCount: number; missingImages: number; missingPrices: number; failed: number }> {
+  const items = await db.select().from(productImportItemsTable).where(eq(productImportItemsTable.runId, runId));
+  const validItems = items.filter((item) => item.payload && item.status !== "failed");
+  const normalized = validItems.map((item) => item.payload as unknown as NormalizedProduct);
+  const csv = toCsv(normalized);
+  await mkdir(PUBLIC_DIR, { recursive: true });
+  await writeFile(CSV_PATH, csv, "utf8");
+  await writeFile(ROOT_CSV_PATH, csv, "utf8");
+  return {
+    csvPath: CSV_PATH,
+    rowCount: normalized.length,
+    missingImages: validItems.filter((item) => item.missingImage).length,
+    missingPrices: validItems.filter((item) => item.missingPrice).length,
+    failed: items.filter((item) => item.status === "failed").length,
+  };
 }
 
 function csvEscape(value: unknown): string {
@@ -340,10 +453,10 @@ function toCsv(products: NormalizedProduct[]): string {
   ].join("\n");
 }
 
-async function downloadImage(url: string, sku: string, index: number): Promise<string> {
+async function downloadImage(url: string, sku: string, index: number, sourceOrigin: string): Promise<string> {
   const imageUrl = new URL(url);
-  if (imageUrl.protocol !== "https:" || ![PERFECTDEALZ_HOST, SHOPIFY_CDN_HOST].includes(imageUrl.hostname)) {
-    throw new Error("Image host is outside the approved PerfectDealz/Shopify CDN allowlist.");
+  if (imageUrl.protocol !== "https:" || imageUrl.username || imageUrl.password || isPrivateIp(imageUrl.hostname) || imageUrl.hostname === "localhost" || imageUrl.hostname.endsWith(".local") || imageUrl.hostname.endsWith(".internal")) {
+    throw new Error("Image host is outside the approved public HTTPS allowlist.");
   }
   const response = await fetch(imageUrl, { headers: { "user-agent": USER_AGENT }, signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`Image returned HTTP ${response.status}`);
@@ -355,11 +468,11 @@ async function downloadImage(url: string, sku: string, index: number): Promise<s
   return `/uploads/products/${filename}`;
 }
 
-async function downloadProductImages(product: NormalizedProduct): Promise<void> {
+async function downloadProductImages(product: NormalizedProduct, sourceOrigin: string): Promise<void> {
   const paths: string[] = [];
   for (let index = 0; index < product.galleryImages.length; index++) {
     try {
-      paths.push(await downloadImage(product.galleryImages[index], product.sku, index));
+      paths.push(await downloadImage(product.galleryImages[index], product.sku, index, sourceOrigin));
     } catch (error) {
       logger.warn({ err: error, image: product.galleryImages[index], sku: product.sku }, "Product image download failed");
     }
@@ -420,28 +533,35 @@ export async function crawlImportRun(runId: number): Promise<void> {
     const [run] = await db.select().from(productImportRunsTable).where(eq(productImportRunsTable.id, runId)).limit(1);
     if (!run) return;
     const options: ProductImportOptions = {
+      sourceUrl: run.sourceDomain,
       overwriteExisting: run.overwriteExisting,
       skipExisting: run.skipExisting,
       importImages: run.importImages,
     };
-    const sourceUrls = await getProductSitemapUrls();
-    await db.update(productImportRunsTable).set({ totalDiscovered: sourceUrls.length }).where(eq(productImportRunsTable.id, runId));
+    const sources = await getProductSources(options.sourceUrl);
+    await db.update(productImportRunsTable).set({ totalDiscovered: sources.length }).where(eq(productImportRunsTable.id, runId));
     const seen = new Set<string>();
     let missingImages = 0;
     let missingPrices = 0;
     let failures = 0;
-    for (const sourceUrl of sourceUrls) {
+    let skippedInactive = 0;
+    await mapWithConcurrency(sources, 8, async (source) => {
+      if (finalizedRuns.has(runId)) return;
       try {
-        const product = normalizeProduct(await fetchProduct(sourceUrl), sourceUrl);
+        const product = normalizeProduct(await fetchProduct(source.sourceUrl, options.sourceUrl, source.product), source.sourceUrl);
+        if (product.stock !== "in_stock") {
+          skippedInactive++;
+          return;
+        }
         const key = product.sku || `${product.name.toLowerCase()}|${product.sourceUrl}`;
-        if (seen.has(key)) continue;
+        if (seen.has(key)) return;
         seen.add(key);
-        if (options.importImages && product.galleryImages.length) await downloadProductImages(product);
+        if (options.importImages && product.galleryImages.length) await downloadProductImages(product, options.sourceUrl);
         if (!product.image) missingImages++;
         if (product.price === null) missingPrices++;
         await db.insert(productImportItemsTable).values({
           runId,
-          sourceUrl,
+          sourceUrl: source.sourceUrl,
           sku: product.sku,
           name: product.name,
           payload: product,
@@ -453,23 +573,22 @@ export async function crawlImportRun(runId: number): Promise<void> {
         failures++;
         await db.insert(productImportItemsTable).values({
           runId,
-          sourceUrl,
-          payload: { sourceUrl },
+          sourceUrl: source.sourceUrl,
+          payload: { sourceUrl: source.sourceUrl },
           status: "failed",
           error: error instanceof Error ? error.message : "Unknown crawl error",
         });
       }
-    }
-    const items = await db.select().from(productImportItemsTable).where(eq(productImportItemsTable.runId, runId));
-    const normalized = items.flatMap((item) => item.payload && item.status !== "failed" ? [item.payload as unknown as NormalizedProduct] : []);
-    await mkdir(PUBLIC_DIR, { recursive: true });
-    await writeFile(CSV_PATH, toCsv(normalized), "utf8");
+    });
+    if (finalizedRuns.has(runId)) return;
+    const report = await writeRunCsv(runId);
     await db.update(productImportRunsTable).set({
       status: "ready",
-      productsFailed: failures,
-      missingImages,
-      missingPrices,
-      csvPath: CSV_PATH,
+      productsFailed: report.failed || failures,
+      missingImages: report.missingImages || missingImages,
+      missingPrices: report.missingPrices || missingPrices,
+      csvPath: report.csvPath,
+      error: skippedInactive ? `Skipped ${skippedInactive.toLocaleString()} inactive products.` : null,
       completedAt: new Date(),
     }).where(eq(productImportRunsTable.id, runId));
   } catch (error) {
@@ -480,6 +599,24 @@ export async function crawlImportRun(runId: number): Promise<void> {
       completedAt: new Date(),
     }).where(eq(productImportRunsTable.id, runId));
   }
+}
+
+export async function finalizeCrawlRun(runId: number): Promise<{ rowCount: number; missingImages: number; missingPrices: number; failed: number }> {
+  const [run] = await db.select().from(productImportRunsTable).where(eq(productImportRunsTable.id, runId)).limit(1);
+  if (!run) throw new Error("Import run not found");
+  if (run.status !== "crawling") throw new Error(`Only a crawling run can be finalized. Current status: ${run.status}`);
+  finalizedRuns.add(runId);
+  const report = await writeRunCsv(runId);
+  await db.update(productImportRunsTable).set({
+    status: "ready",
+    productsFailed: report.failed,
+    missingImages: report.missingImages,
+    missingPrices: report.missingPrices,
+    csvPath: report.csvPath,
+    error: `Finalized the accepted products before the full source crawl completed.`,
+    completedAt: new Date(),
+  }).where(eq(productImportRunsTable.id, runId));
+  return report;
 }
 
 export async function importRun(runId: number): Promise<void> {

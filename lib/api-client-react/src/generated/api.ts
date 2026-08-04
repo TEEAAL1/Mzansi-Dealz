@@ -1536,7 +1536,7 @@ export const getStartProductImportUrl = () => {
 }
 
 /**
- * @summary Crawl the authorized PerfectDealz product catalog
+ * @summary Crawl an authorized product catalog
  */
 export const startProductImport = async (productImportOptions?: ProductImportOptions, options?: RequestInit): Promise<ProductImportStartResponse> => {
 
@@ -1585,7 +1585,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type StartProductImportMutationError = ErrorType<void>
 
     /**
- * @summary Crawl the authorized PerfectDealz product catalog
+ * @summary Crawl an authorized product catalog
  */
 export const useStartProductImport = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startProductImport>>, TError,{data?: BodyType<ProductImportOptions>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1743,6 +1743,76 @@ export const useImportProductRun = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getImportProductRunMutationOptions(options));
+    }
+
+export const getFinalizeProductImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/product-import/${id}/finalize`
+}
+
+/**
+ * @summary Finalize the accepted rows of an in-progress product migration
+ */
+export const finalizeProductImport = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getFinalizeProductImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getFinalizeProductImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeProductImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalizeProductImport>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['finalizeProductImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalizeProductImport>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  finalizeProductImport(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalizeProductImportMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeProductImport>>>
+
+    export type FinalizeProductImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Finalize the accepted rows of an in-progress product migration
+ */
+export const useFinalizeProductImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeProductImport>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finalizeProductImport>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getFinalizeProductImportMutationOptions(options));
     }
 
 export const getRollbackProductImportUrl = (id: number,) => {

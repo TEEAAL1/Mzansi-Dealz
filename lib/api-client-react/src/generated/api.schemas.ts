@@ -219,6 +219,8 @@ export interface CreateProductRequest {
 }
 
 export interface ProductImportOptions {
+  /** Public HTTPS origin of a website the administrator owns or is authorized to migrate */
+  sourceUrl: string;
   overwriteExisting?: boolean;
   skipExisting?: boolean;
   importImages?: boolean;

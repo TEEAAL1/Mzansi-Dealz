@@ -25,7 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const SOURCE_DOMAIN = "https://perfectdealz.co.za";
+const DEFAULT_SOURCE_URL = "https://www.perfectdealz.co.za";
 const ACTIVE_STATUSES = new Set(["queued", "pending", "crawling", "previewing", "importing", "processing", "running"]);
 
 function isActiveStatus(status?: string | null) {
@@ -82,7 +82,7 @@ export default function AdminProductImport() {
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [importImages, setImportImages] = useState(true);
-  const [sourceUrl, setSourceUrl] = useState(SOURCE_DOMAIN);
+  const [sourceUrl, setSourceUrl] = useState(DEFAULT_SOURCE_URL);
   const [isDownloading, setIsDownloading] = useState(false);
 
   const latestQuery = useGetLatestProductImport({
@@ -124,12 +124,12 @@ export default function AdminProductImport() {
   };
 
   const handleStart = () => {
-    if (sourceUrl.trim().replace(/\/$/, "") !== SOURCE_DOMAIN) {
-      toast({ title: "Source not authorised", description: `Imports are restricted to ${SOURCE_DOMAIN}.`, variant: "destructive" });
+    if (!/^https:\/\/[^/]+\/?$/.test(sourceUrl.trim())) {
+      toast({ title: "Invalid source URL", description: "Enter the HTTPS origin of a website you own or have permission to migrate, for example https://www.example.com.", variant: "destructive" });
       return;
     }
     startImport.mutate({
-      data: { overwriteExisting, skipExisting: !overwriteExisting, importImages },
+      data: { sourceUrl: sourceUrl.trim(), overwriteExisting, skipExisting: !overwriteExisting, importImages },
     }, {
       onSuccess: (response) => {
         setSelectedRunId(response.run.id);
@@ -160,7 +160,7 @@ export default function AdminProductImport() {
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
-      anchor.download = `perfectdealz-import-${run.id}.csv`;
+      anchor.download = "perfectdealz-products.csv";
       anchor.click();
       URL.revokeObjectURL(href);
       toast({ title: "CSV downloaded", description: "The latest preview has been saved to your device." });
@@ -201,7 +201,7 @@ export default function AdminProductImport() {
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><FileSpreadsheet className="h-4 w-4" />Catalogue operations</div>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl" data-testid="text-page-title">Import products</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Bring the PerfectDealz catalogue into MzansiDealz in two deliberate steps: crawl first, inspect the CSV, then import.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Bring a catalogue you own or have permission to migrate into MzansiDealz in two deliberate steps: crawl first, inspect the CSV, then import.</p>
         </div>
         {run && <div className="flex items-center gap-3 text-sm text-slate-500" data-testid="text-last-run"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusTone(run.status)}`} data-testid="status-import-run">{statusLabel(run.status)}</span><span>Run #{run.id}</span></div>}
       </header>
@@ -212,11 +212,11 @@ export default function AdminProductImport() {
           <div className="flex gap-4">
             <div className="mt-0.5 rounded-xl bg-white/10 p-3"><ShieldCheck className="h-5 w-5 text-amber-300" /></div>
             <div>
-              <p className="text-sm font-semibold">Authorised source only</p>
-              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-300">This importer is restricted to the catalogue you own at <strong className="font-semibold text-white">perfectdealz.co.za</strong>. Do not use it for third-party websites.</p>
+              <p className="text-sm font-semibold">Use only authorised sources</p>
+              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-300">Only migrate websites you own or have explicit permission to use. The importer accepts public HTTPS origins and blocks private/local network addresses.</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-slate-300"><Search className="h-3.5 w-3.5" />https://perfectdealz.co.za</div>
+          <div className="flex shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 font-mono text-xs text-slate-300"><Search className="h-3.5 w-3.5" />HTTPS source required</div>
         </div>
       </section>
 
@@ -227,7 +227,7 @@ export default function AdminProductImport() {
             <div className="space-y-2">
               <Label htmlFor="source-url">Source URL</Label>
               <Input id="source-url" value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} disabled={startImport.isPending || isBusy} className="font-mono text-sm" data-testid="input-source-url" />
-              <p className="text-xs text-slate-500">The importer follows product links beneath this domain.</p>
+              <p className="text-xs text-slate-500">Enter the public HTTPS origin of a site you own or have permission to migrate. Shopify sites and product JSON-LD are supported.</p>
             </div>
             <fieldset className="space-y-3">
               <legend className="text-sm font-medium text-slate-900">Existing products</legend>

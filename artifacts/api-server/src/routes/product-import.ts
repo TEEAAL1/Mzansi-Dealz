@@ -8,6 +8,8 @@ import {
   rollbackRun,
   PERFECTDEALZ_ORIGIN,
   getLatestImportRun,
+  normalizeSourceOrigin,
+  finalizeCrawlRun,
 } from "../services/productImportService";
 
 const router = Router();
@@ -68,15 +70,26 @@ router.get("/admin/product-import/:id", requireAdmin, async (req, res): Promise<
 
 router.post("/admin/product-import/start", requireAdmin, async (req, res): Promise<void> => {
   const input = req.body as Partial<{
+    sourceUrl: string;
     overwriteExisting: boolean;
     skipExisting: boolean;
     importImages: boolean;
   }>;
+  let sourceUrl: string;
+  try {
+    sourceUrl = normalizeSourceOrigin(input.sourceUrl ?? "");
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : "Invalid source URL" });
+    return;
+  }
   const overwriteExisting = input.overwriteExisting === true;
   const skipExisting = overwriteExisting ? false : input.skipExisting !== false;
   const importImages = input.importImages !== false;
+  await db.update(productImportRunsTable)
+    .set({ status: "failed", error: "Superseded by a newer import run.", completedAt: new Date() })
+    .where(sql`${productImportRunsTable.status} IN ('crawling', 'importing')`);
   const [run] = await db.insert(productImportRunsTable).values({
-    sourceDomain: PERFECTDEALZ_ORIGIN,
+    sourceDomain: sourceUrl,
     overwriteExisting,
     skipExisting,
     importImages,
@@ -106,6 +119,16 @@ router.post("/admin/product-import/:id/import", requireAdmin, async (req, res): 
   }
   void importRun(id);
   res.status(202).json({ message: "CSV import started.", runId: id });
+});
+
+router.post("/admin/product-import/:id/finalize", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  try {
+    const report = await finalizeCrawlRun(id);
+    res.json({ message: "Accepted products finalized for import.", runId: id, ...report });
+  } catch (error) {
+    res.status(409).json({ error: error instanceof Error ? error.message : "Could not finalize import run" });
+  }
 });
 
 router.post("/admin/product-import/:id/rollback", requireAdmin, async (req, res): Promise<void> => {
@@ -142,7 +165,7 @@ router.get("/admin/product-import/:id/csv", requireAdmin, async (req, res): Prom
       product.status, product.featured,
     ].map(escape).join(",");
   });
-  res.type("text/csv").setHeader("Content-Disposition", `attachment; filename="perfectdealz-products-${id}.csv"`).send([columns.map(escape).join(","), ...rows].join("\n"));
+  res.type("text/csv").setHeader("Content-Disposition", 'attachment; filename="perfectdealz-products.csv"').send([columns.map(escape).join(","), ...rows].join("\n"));
 });
 
 export default router;
