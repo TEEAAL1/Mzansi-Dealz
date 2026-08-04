@@ -16,6 +16,7 @@ import {
 import { sendPaymentEmail } from "../services/emailService";
 
 const router = Router();
+const CANONICAL_PUBLIC_SITE_URL = "https://www.mzansidealz.com";
 
 function generateOrderNumber(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -24,6 +25,9 @@ function generateOrderNumber(): string {
 }
 
 function getSiteUrl(req: Request): string {
+  if (process.env.NODE_ENV === "production") {
+    return CANONICAL_PUBLIC_SITE_URL;
+  }
   const configured = process.env.PUBLIC_APP_URL ?? process.env.FRONTEND_ORIGIN;
   if (configured) return configured.replace(/\/$/, "");
   const domains = process.env.REPLIT_DOMAINS?.split(",")[0];

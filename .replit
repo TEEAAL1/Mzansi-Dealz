@@ -44,4 +44,4 @@ channel = "stable-25_05"
 CORS_ORIGINS = "https://www.mzansidealz.com,https://mzansidealz.com"
 
 [userenv.shared]
-PUBLIC_APP_URL = "https://mzansi-dealz--mrmoyothabani.replit.app"
+PUBLIC_APP_URL = "https://www.mzansidealz.com"
