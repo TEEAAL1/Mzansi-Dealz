@@ -7,4 +7,4 @@ The custom domain `www.mzansidealz.com` is served by a separate Vercel deploymen
 
 **Why:** A checkout UI change was visible on the Replit URL but the custom domain continued serving an older bundle until the repository and deployment paths were compared directly.
 
-**How to apply:** For customer-facing frontend changes, push the verified branch to GitHub for Vercel, verify the custom-domain bundle, and separately prompt the user to Publish the Replit artifact. Keep backend payment return URLs canonicalized to `www.mzansidealz.com`.
+**How to apply:** For customer-facing frontend changes, push the verified branch to GitHub for Vercel, verify the custom-domain bundle, and separately prompt the user to Publish the Replit artifact. Keep backend payment return URLs canonicalized to `www.mzansidealz.com`. Production catalogue data and image assets also need an explicit production import and persistent storage; development rows and ignored local uploads do not appear in the published API automatically.
