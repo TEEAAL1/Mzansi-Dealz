@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, productsTable, categoriesTable } from "@workspace/db";
-import { eq, ilike, and, desc, asc, sql } from "drizzle-orm";
+import { db, productsTable, categoriesTable, orderItemsTable, ordersTable } from "@workspace/db";
+import { eq, ilike, and, desc, asc, gte, lte, sql } from "drizzle-orm";
 import {
   ListProductsQueryParams,
   GetFeaturedProductsQueryParams,
@@ -176,6 +176,18 @@ router.get("/products", async (req, res) => {
     conditions.push(eq(productsTable.onSale, true));
   }
 
+  if (params.brand) {
+    conditions.push(ilike(productsTable.brand, params.brand));
+  }
+
+  if (params.min_price !== undefined) {
+    conditions.push(gte(productsTable.price, String(params.min_price)));
+  }
+
+  if (params.max_price !== undefined) {
+    conditions.push(lte(productsTable.price, String(params.max_price)));
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   let orderClause;
@@ -188,6 +200,17 @@ router.get("/products", async (req, res) => {
       break;
     case "discount_desc":
       orderClause = desc(productsTable.discountPercent);
+      break;
+    case "best_selling":
+      orderClause = desc(
+        sql<number>`(
+          SELECT COALESCE(SUM(${orderItemsTable.quantity}), 0)
+          FROM ${orderItemsTable}
+          INNER JOIN ${ordersTable} ON ${ordersTable.id} = ${orderItemsTable.orderId}
+          WHERE ${orderItemsTable.productId} = ${productsTable.id}
+            AND ${ordersTable.status} NOT IN ('cancelled', 'failed', 'refunded')
+        )`,
+      );
       break;
     default:
       orderClause = desc(productsTable.createdAt);

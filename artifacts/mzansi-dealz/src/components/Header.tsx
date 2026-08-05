@@ -1,19 +1,26 @@
 import { Link } from "wouter";
 import { useCart } from "@/hooks/use-cart";
 import { Search, ShoppingCart, Menu, X, Truck } from "lucide-react";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { Button } from "./ui/button";
 
 export function Header() {
   const { totalItems } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = search.trim();
+    window.location.href = value ? `/shop?search=${encodeURIComponent(value)}` : "/shop";
+  };
 
   const navLinks = [
     { label: "Home", href: "/" },
     { label: "All Deals", href: "/shop" },
     { label: "Electronics", href: "/shop/electronics" },
     { label: "Home & Living", href: "/shop/home-living" },
-    { label: "Beauty & Health", href: "/shop/health-beauty" },
+    { label: "Beauty & Health", href: "/shop/beauty-health" },
     { label: "Fashion", href: "/shop/fashion" },
     { label: "Outdoor & Lifestyle", href: "/shop/outdoor-lifestyle" },
     { label: "Wellness", href: "/shop/wellness" },
@@ -49,18 +56,21 @@ export function Header() {
             </Link>
           </div>
 
-          <div className="flex-1 max-w-xl hidden md:flex items-center">
+          <form onSubmit={submitSearch} className="flex-1 max-w-xl hidden md:flex items-center">
             <div className="relative w-full">
               <input
                 type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search products, brands and categories..."
+                aria-label="Search products, brands and categories"
                 className="w-full border-2 border-primary/20 focus:border-primary rounded-full py-2 pl-4 pr-12 outline-none transition-colors text-sm"
               />
-              <button className="absolute right-1 top-1 bottom-1 w-9 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
+              <button type="submit" aria-label="Search" className="absolute right-1 top-1 bottom-1 w-9 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors">
                 <Search className="w-4 h-4" />
               </button>
             </div>
-          </div>
+          </form>
 
           <div className="flex items-center gap-3 shrink-0">
             <Link href="/cart" className="relative p-2 text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
@@ -77,16 +87,19 @@ export function Header() {
           </div>
         </div>
 
-        <div className="mt-3 relative w-full md:hidden">
+        <form onSubmit={submitSearch} className="mt-3 relative w-full md:hidden">
           <input
             type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search products..."
+            aria-label="Search products"
             className="w-full border border-input rounded-full py-2 pl-4 pr-10 outline-none focus:border-primary text-sm"
           />
-          <button className="absolute right-3 top-2.5 text-muted-foreground">
+          <button type="submit" aria-label="Search" className="absolute right-3 top-2.5 text-muted-foreground">
             <Search className="w-4 h-4" />
           </button>
-        </div>
+        </form>
       </div>
 
       <nav className={`${mobileMenuOpen ? "block" : "hidden"} lg:block border-t border-border bg-muted/30`}>

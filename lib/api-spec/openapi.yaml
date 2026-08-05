@@ -51,11 +51,25 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: brand
+          in: query
+          schema:
+            type: string
+        - name: min_price
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: max_price
+          in: query
+          schema:
+            type: number
+            minimum: 0
         - name: sort
           in: query
           schema:
             type: string
-            enum: [newest, price_asc, price_desc, discount_desc]
+            enum: [newest, price_asc, price_desc, discount_desc, best_selling]
         - name: limit
           in: query
           schema:

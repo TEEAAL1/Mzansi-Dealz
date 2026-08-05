@@ -59,7 +59,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-gray-300">
               <li><Link href="/shop/electronics" className="hover:text-primary transition-colors">Electronics</Link></li>
               <li><Link href="/shop/home-living" className="hover:text-primary transition-colors">Home &amp; Living</Link></li>
-              <li><Link href="/shop/health-beauty" className="hover:text-primary transition-colors">Beauty &amp; Health</Link></li>
+               <li><Link href="/shop/beauty-health" className="hover:text-primary transition-colors">Beauty &amp; Health</Link></li>
               <li><Link href="/shop/fashion" className="hover:text-primary transition-colors">Fashion</Link></li>
               <li><Link href="/shop/wellness" className="hover:text-primary transition-colors">Wellness</Link></li>
               <li><Link href="/shop" className="hover:text-primary transition-colors">View All Deals</Link></li>
@@ -77,10 +77,9 @@ export function Footer() {
             <div className="mt-4">
               <h4 className="font-bold text-sm mb-2">Payment Methods</h4>
               <div className="flex gap-2 flex-wrap">
-                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">EFT</span>
-                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Capitec Pay</span>
                 <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Visa</span>
                 <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Mastercard</span>
+                <span className="bg-white/10 px-2 py-0.5 rounded text-xs">Secure checkout</span>
               </div>
             </div>
           </div>

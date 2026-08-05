@@ -419,6 +419,15 @@ export type ListProductsParams = {
 category?: string;
 search?: string;
 on_sale?: boolean;
+brand?: string;
+/**
+ * @minimum 0
+ */
+min_price?: number;
+/**
+ * @minimum 0
+ */
+max_price?: number;
 sort?: ListProductsSort;
 limit?: number;
 offset?: number;
@@ -432,6 +441,7 @@ export const ListProductsSort = {
   price_asc: 'price_asc',
   price_desc: 'price_desc',
   discount_desc: 'discount_desc',
+  best_selling: 'best_selling',
 } as const;
 
 export type GetFeaturedProductsParams = {

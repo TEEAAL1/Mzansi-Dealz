@@ -19,11 +19,20 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List products with optional filters
  */
+export const listProductsQueryMinPriceMin = 0;
+
+export const listProductsQueryMaxPriceMin = 0;
+
+
+
 export const ListProductsQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
   "on_sale": zod.coerce.boolean().optional(),
-  "sort": zod.enum(['newest', 'price_asc', 'price_desc', 'discount_desc']).optional(),
+  "brand": zod.coerce.string().optional(),
+  "min_price": zod.coerce.number().min(listProductsQueryMinPriceMin).optional(),
+  "max_price": zod.coerce.number().min(listProductsQueryMaxPriceMin).optional(),
+  "sort": zod.enum(['newest', 'price_asc', 'price_desc', 'discount_desc', 'best_selling']).optional(),
   "limit": zod.coerce.number().optional(),
   "offset": zod.coerce.number().optional()
 })

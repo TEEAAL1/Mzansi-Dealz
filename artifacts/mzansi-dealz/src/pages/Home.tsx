@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import {
   useGetFeaturedProducts,
   useGetNewArrivals,
+  useListProducts,
 } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ProductCard";
+import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import {
   ChevronRight,
@@ -21,11 +23,13 @@ import {
   Leaf,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FormEvent, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
   { name: "Electronics", slug: "electronics", icon: Cpu, color: "bg-blue-50 text-blue-600 group-hover:bg-blue-100" },
   { name: "Home & Living", slug: "home-living", icon: HomeIcon, color: "bg-green-50 text-green-600 group-hover:bg-green-100" },
-  { name: "Beauty & Health", slug: "health-beauty", icon: Sparkles, color: "bg-pink-50 text-pink-600 group-hover:bg-pink-100" },
+  { name: "Beauty & Health", slug: "beauty-health", icon: Sparkles, color: "bg-pink-50 text-pink-600 group-hover:bg-pink-100" },
   { name: "Fashion", slug: "fashion", icon: Shirt, color: "bg-purple-50 text-purple-600 group-hover:bg-purple-100" },
   { name: "Outdoor & Lifestyle", slug: "outdoor-lifestyle", icon: Sun, color: "bg-yellow-50 text-yellow-600 group-hover:bg-yellow-100" },
   { name: "Wellness", slug: "wellness", icon: Leaf, color: "bg-teal-50 text-teal-600 group-hover:bg-teal-100" },
@@ -41,9 +45,33 @@ const TRUST_BADGES = [
 export default function Home() {
   const { data: featured, isLoading: loadingFeatured } = useGetFeaturedProducts({ limit: 4 });
   const { data: newArrivals, isLoading: loadingNew } = useGetNewArrivals({ limit: 4 });
+  const { data: bestSellers, isLoading: loadingBest } = useListProducts({ sort: "best_selling", limit: 4 });
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(() => localStorage.getItem("mzansi_newsletter_subscribed") === "true");
+
+  const subscribe = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = email.trim().toLowerCase();
+    if (!value || !value.includes("@")) return;
+    localStorage.setItem("mzansi_newsletter_subscribed", "true");
+    setSubscribed(true);
+    toast({ title: "You’re on the list", description: "We’ll keep your inbox focused on worthwhile deals." });
+  };
 
   return (
     <div className="flex flex-col gap-10 pb-12">
+      <Seo
+        title="MzansiDealz | South Africa's Best Deals Online"
+        description="Shop trusted electronics, home essentials, beauty, fashion and wellness deals with secure checkout and nationwide delivery."
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "MzansiDealz",
+          url: "https://mzansidealz.com",
+          potentialAction: { "@type": "SearchAction", target: "https://mzansidealz.com/shop?search={search_term_string}", "query-input": "required name=search_term_string" },
+        }}
+      />
       {/* Hero Section */}
       <section className="bg-primary text-primary-foreground pt-10 pb-14 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-5 pointer-events-none">
@@ -194,6 +222,57 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Best Sellers */}
+      <section className="container mx-auto px-4">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Popular with shoppers</p>
+            <h2 className="mt-1 text-xl font-black italic tracking-tight md:text-2xl">Best Sellers</h2>
+          </div>
+          <Link href="/shop?sort=best_selling" className="flex items-center text-sm font-bold text-primary hover:underline">
+            Shop popular deals <ChevronRight className="ml-0.5 h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+          {loadingBest
+            ? Array(4).fill(0).map((_, index) => <Skeleton key={index} className="h-[27rem] rounded-2xl" />)
+            : bestSellers?.products.map((product) => <ProductCard key={product.id} product={product} />)}
+        </div>
+      </section>
+
+      {/* Customer feedback invitation */}
+      <section className="container mx-auto px-4">
+        <div className="grid gap-5 rounded-2xl border border-border bg-secondary p-6 text-secondary-foreground md:grid-cols-[1fr_auto] md:items-center md:p-8">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-accent">Your feedback matters</p>
+            <h2 className="mt-2 text-2xl font-black">Help us make every deal better</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary-foreground/75">Have you shopped with MzansiDealz? Tell us what worked and what we can improve. We’re building a store South Africans can trust, one order at a time.</p>
+          </div>
+          <Button asChild className="bg-accent font-bold text-accent-foreground hover:bg-accent/90">
+            <a href="https://wa.me/27677664764" target="_blank" rel="noopener noreferrer">Share feedback</a>
+          </Button>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="container mx-auto px-4">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
+          <div className="mb-5 md:mb-0">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Deal notes, not inbox noise</p>
+            <h2 className="mt-2 text-2xl font-black">Get the best deals first</h2>
+            <p className="mt-2 text-sm text-muted-foreground">A short, occasional email when new deals and useful offers land.</p>
+          </div>
+          {subscribed ? (
+            <p className="rounded-xl bg-card px-5 py-3 text-sm font-bold text-primary shadow-sm">You’re subscribed. Thanks for joining us.</p>
+          ) : (
+            <form onSubmit={subscribe} className="flex w-full max-w-md gap-2">
+              <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" aria-label="Email address for deal updates" className="h-12 min-w-0 flex-1 rounded-xl border border-input bg-card px-4 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              <Button type="submit" className="h-12 font-bold">Sign me up</Button>
+            </form>
+          )}
+        </div>
+      </section>
+
       {/* Bottom Trust Strip */}
       <section className="container mx-auto px-4 py-6 border-t border-border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
@@ -202,7 +281,7 @@ export default function Home() {
               <ShieldCheck className="w-7 h-7" />
             </div>
             <h3 className="font-bold mb-1">Secure Payments</h3>
-            <p className="text-sm text-muted-foreground">EFT, Capitec Pay, Visa &amp; Mastercard processed securely.</p>
+            <p className="text-sm text-muted-foreground">Secure hosted checkout with the payment options shown at checkout, including card and EFT where available.</p>
           </div>
           <div className="flex flex-col items-center">
             <div className="bg-secondary/10 text-secondary w-14 h-14 rounded-full flex items-center justify-center mb-3">
