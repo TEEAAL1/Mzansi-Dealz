@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -41,9 +42,18 @@ const queryClient = new QueryClient({
   },
 });
 
+function AdminRedirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate(to);
+  }, [navigate, to]);
+
+  return null;
+}
+
 function AdminRoutes() {
   const { token, isChecking } = useAdminToken();
-  const [, navigate] = useLocation();
 
   if (isChecking) {
     return <div className="min-h-screen bg-gray-50" />;
@@ -53,12 +63,7 @@ function AdminRoutes() {
     return (
       <Switch>
         <Route path="/login" component={AdminLogin} />
-        <Route>
-          {() => {
-            navigate("/login");
-            return null;
-          }}
-        </Route>
+        <Route><AdminRedirect to="/login" /></Route>
       </Switch>
     );
   }
@@ -67,10 +72,7 @@ function AdminRoutes() {
     <AdminLayout>
       <Switch>
         <Route path="/">
-          {() => {
-            navigate("/products");
-            return null;
-          }}
+          <AdminRedirect to="/products" />
         </Route>
         <Route path="/dashboard" component={AdminDashboard} />
         <Route path="/products" component={AdminProducts} />
