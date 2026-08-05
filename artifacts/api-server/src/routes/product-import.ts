@@ -7,7 +7,8 @@ import {
   crawlImportRun,
   importRun,
   rollbackRun,
-  PERFECTDEALZ_ORIGIN,
+  INTERNAL_MIGRATION_SOURCE_ORIGIN,
+  normalizeCatalogueBrand,
   getLatestImportRun,
   normalizeSourceOrigin,
   finalizeCrawlRun,
@@ -127,7 +128,7 @@ router.post("/admin/product-import/start", requireAdmin, async (req, res): Promi
   }>;
   let sourceUrl: string;
   try {
-    sourceUrl = normalizeSourceOrigin(input.sourceUrl ?? "");
+    sourceUrl = normalizeSourceOrigin(input.sourceUrl?.trim() || INTERNAL_MIGRATION_SOURCE_ORIGIN);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : "Invalid source URL" });
     return;
@@ -246,9 +247,7 @@ router.get("/admin/product-import/:id/csv", requireAdmin, async (req, res): Prom
   const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
   const rows = items.map((item) => {
     const product = item.payload as Record<string, unknown>;
-    const brand = product.brand === "Perfect Dealz" || !String(product.brand ?? "").trim()
-      ? "MZANSIDEALZ"
-      : product.brand;
+    const brand = normalizeCatalogueBrand(String(product.brand ?? ""));
     return [
       product.sku, product.name, product.description, product.category, brand, product.price,
       product.salePrice, product.stock, product.image, Array.isArray(product.galleryImages) ? product.galleryImages.join("|") : "",
@@ -256,7 +255,7 @@ router.get("/admin/product-import/:id/csv", requireAdmin, async (req, res): Prom
       product.status, product.featured,
     ].map(escape).join(",");
   });
-  res.type("text/csv").setHeader("Content-Disposition", 'attachment; filename="perfectdealz-products.csv"').send([columns.map(escape).join(","), ...rows].join("\n"));
+  res.type("text/csv").setHeader("Content-Disposition", 'attachment; filename="mzansi-dealz-products.csv"').send([columns.map(escape).join(","), ...rows].join("\n"));
 });
 
 export default router;

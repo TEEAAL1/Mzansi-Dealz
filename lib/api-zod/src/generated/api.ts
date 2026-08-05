@@ -403,7 +403,7 @@ export const CreateProductBody = zod.object({
 
 
 /**
- * @summary Get the latest PerfectDealz product migration run
+ * @summary Get the latest product migration run
  */
 export const GetLatestProductImportResponse = zod.object({
   "run": zod.union([zod.object({

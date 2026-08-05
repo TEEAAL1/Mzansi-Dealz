@@ -393,7 +393,7 @@ paths:
     get:
       operationId: getLatestProductImport
       tags: [admin]
-      summary: Get the latest PerfectDealz product migration run
+      summary: Get the latest product migration run
       responses:
         "200":
           description: Latest import run and preview items

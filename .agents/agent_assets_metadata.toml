@@ -9,7 +9,7 @@ title = "Vercel Deployment Config"
 
 [[outputs]]
 id = "CaTga4nXnQlcQKZVE9s5K"
-uri = "file://perfectdealz-products.csv"
+uri = "file://mzansi-dealz-products.csv"
 type = "table"
-title = "PerfectDealz product catalogue CSV"
-description = "Final imported active catalogue from https://www.perfectdealz.co.za — 6,420 active product rows with the requested 15 columns."
+title = "Mzansi Dealz product catalogue CSV"
+description = "Final imported active catalogue — 6,420 active product rows with the requested 15 columns."

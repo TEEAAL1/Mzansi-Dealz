@@ -1461,7 +1461,7 @@ export const getGetLatestProductImportUrl = () => {
 }
 
 /**
- * @summary Get the latest PerfectDealz product migration run
+ * @summary Get the latest product migration run
  */
 export const getLatestProductImport = async ( options?: RequestInit): Promise<ProductImportStatusResponse> => {
 
@@ -1508,7 +1508,7 @@ export type GetLatestProductImportQueryError = ErrorType<void>
 
 
 /**
- * @summary Get the latest PerfectDealz product migration run
+ * @summary Get the latest product migration run
  */
 
 export function useGetLatestProductImport<TData = Awaited<ReturnType<typeof getLatestProductImport>>, TError = ErrorType<void>>(

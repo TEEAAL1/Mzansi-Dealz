@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const DEFAULT_SOURCE_URL = "https://www.perfectdealz.co.za";
+const DEFAULT_SOURCE_URL = "";
 const ACTIVE_STATUSES = new Set(["queued", "pending", "crawling", "previewing", "importing", "processing", "running"]);
 
 function isActiveStatus(status?: string | null) {
@@ -206,7 +206,7 @@ export default function AdminProductImport() {
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
-      anchor.download = "perfectdealz-products.csv";
+      anchor.download = "mzansi-dealz-products.csv";
       anchor.click();
       URL.revokeObjectURL(href);
       toast({ title: "CSV downloaded", description: "The latest preview has been saved to your device." });
@@ -235,7 +235,7 @@ export default function AdminProductImport() {
       <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center" data-testid="state-import-error">
         <AlertCircle className="mx-auto h-8 w-8 text-rose-600" />
         <h1 className="mt-3 text-lg font-semibold text-rose-950">Import history is unavailable</h1>
-        <p className="mx-auto mt-1 max-w-md text-sm text-rose-800">We could not load the latest PerfectDealz run. Your catalogue is safe.</p>
+        <p className="mx-auto mt-1 max-w-md text-sm text-rose-800">We could not load the latest product migration run. Your catalogue is safe.</p>
         <Button onClick={() => latestQuery.refetch()} variant="outline" className="mt-5 border-rose-200 bg-white text-rose-800 hover:bg-rose-100" data-testid="button-retry-import"><RefreshCw className="mr-2 h-4 w-4" />Try again</Button>
       </div>
     );

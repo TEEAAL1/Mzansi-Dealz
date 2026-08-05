@@ -54,7 +54,7 @@ Thumbs.db
 !.env.example
 
 # Product migration runtime exports and downloaded catalogue images
-/perfectdealz-products.csv
-/artifacts/api-server/perfectdealz-products.csv
-/artifacts/api-server/public/perfectdealz-products.csv
+/mzansi-dealz-products.csv
+/artifacts/api-server/mzansi-dealz-products.csv
+/artifacts/api-server/public/mzansi-dealz-products.csv
 /artifacts/api-server/public/uploads/products/

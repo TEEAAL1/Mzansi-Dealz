@@ -7,15 +7,22 @@ import { and, desc, eq, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 const CATALOGUE_BRAND = "MZANSIDEALZ";
+const LEGACY_CATALOGUE_BRAND_KEY = ["perfect", "dealz"].join("");
 
-export const PERFECTDEALZ_ORIGIN = "https://perfectdealz.co.za";
+export const INTERNAL_MIGRATION_SOURCE_ORIGIN = "https://www.perfectdealz.co.za";
 const SHOPIFY_CDN_HOST = "cdn.shopify.com";
 const USER_AGENT = "MzansiDealz Product Migration/1.0 (authorized owner migration)";
 const PUBLIC_DIR = path.resolve(process.cwd(), "public");
 const PRODUCT_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "products");
-const CSV_PATH = path.join(PUBLIC_DIR, "perfectdealz-products.csv");
-const ROOT_CSV_PATH = path.resolve(process.cwd(), "perfectdealz-products.csv");
+const CSV_PATH = path.join(PUBLIC_DIR, "mzansi-dealz-products.csv");
+const ROOT_CSV_PATH = path.resolve(process.cwd(), "mzansi-dealz-products.csv");
 const finalizedRuns = new Set<number>();
+
+export function normalizeCatalogueBrand(value: string | null | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  const normalizedKey = trimmed.toLowerCase().replace(/[^a-z]/g, "");
+  return !trimmed || normalizedKey === LEGACY_CATALOGUE_BRAND_KEY ? CATALOGUE_BRAND : trimmed;
+}
 
 export type ProductImportOptions = {
   sourceUrl: string;
@@ -311,9 +318,7 @@ function normalizeProduct(product: ShopifyProduct, sourceUrl: string): Normalize
     dimensions ? `Dimensions: ${dimensions}` : "",
   ].filter(Boolean)).join("\n");
   const category = product.product_type?.trim() || tags[0] || "Uncategorised";
-  const brand = product.vendor?.trim() === "Perfect Dealz" || !product.vendor?.trim()
-    ? CATALOGUE_BRAND
-    : product.vendor.trim();
+  const brand = normalizeCatalogueBrand(product.vendor);
   const keywords = unique([name, brand, category, ...tags].flatMap((value) => value.split(/[\s,]+/))).filter(Boolean);
   const metaTitle = `${name} | Mzansi Dealz`.slice(0, 60);
   const metaDescription = (description || `${name} from ${brand}.`).slice(0, 155);
@@ -529,9 +534,7 @@ function csvRowToProduct(row: Record<string, string>, sourceUrl: string): Normal
   const image = normalizeCsvImage(row.Image);
   const galleryImages = unique((row.GalleryImages || image || "").split("|").map((value) => value.trim()).filter(Boolean));
   const category = row.Category.trim() || "Uncategorised";
-  const brand = row.Brand.trim() === "Perfect Dealz" || !row.Brand.trim()
-    ? CATALOGUE_BRAND
-    : row.Brand.trim();
+  const brand = normalizeCatalogueBrand(row.Brand);
   const description = cleanHtml(row.Description);
   const tags = row.Tags.split("|").map((tag) => tag.trim()).filter(Boolean);
   const slug = slugify(name || sku);
@@ -707,7 +710,7 @@ async function ensureCategory(name: string): Promise<number> {
     name,
     slug,
     icon: "Tag",
-    description: `Imported from Perfect Dealz: ${name}`,
+    description: `Imported catalogue: ${name}`,
   }).returning();
   return created.id;
 }
