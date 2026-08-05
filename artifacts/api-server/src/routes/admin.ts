@@ -81,6 +81,10 @@ router.post("/admin/login", async (req, res) => {
 });
 
 router.get("/admin/session", (req, res) => {
+  // This response carries the current CSRF token. Never let a browser,
+  // proxy, or CDN reuse an older token during a mutation retry.
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
   res.json({
     authenticated: hasAdminSession(req),
     csrfToken: hasAdminSession(req) ? req.cookies?.mzansi_admin_csrf : undefined,

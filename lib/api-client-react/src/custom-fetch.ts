@@ -313,7 +313,15 @@ async function refreshAdminCsrfToken(requestUrl: string): Promise<string | null>
   const sessionUrl = requestUrl.startsWith("http")
     ? new URL("/api/admin/session", requestUrl).toString()
     : "/api/admin/session";
-  const response = await fetch(sessionUrl, { credentials: "include" });
+  // Do not allow a cached 304/session response to strand a mutation with an
+  // old token. The API also marks this endpoint no-store, but keep the client
+  // explicit for browsers and reverse proxies that cache aggressively.
+  _csrfToken = null;
+  const response = await fetch(sessionUrl, {
+    credentials: "include",
+    cache: "no-store",
+    headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+  });
   if (!response.ok) return null;
   const payload = await response.json() as { authenticated?: boolean; csrfToken?: string };
   if (!payload.authenticated || !payload.csrfToken) return null;

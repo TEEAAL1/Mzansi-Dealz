@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { CheckCircle2, Clock, XCircle, ShoppingBag, MapPin, Package, RefreshCw, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function OrderConfirmation({ params }: { params: { orderNumber: string } }) {
   const [retrying, setRetrying] = useState(false);
@@ -15,6 +15,18 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
       queryKey: ["order", params.orderNumber]
     }
   });
+
+  useEffect(() => {
+    if (!order || order.status === "paid") return;
+    const paymentResult = new URLSearchParams(window.location.search).get("payment");
+    if (paymentResult !== "success") return;
+
+    void fetch(apiUrl(`/api/checkout/reconcile/${encodeURIComponent(order.orderNumber)}`), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customerEmail: order.customerEmail }),
+    });
+  }, [order]);
 
   if (isLoading) {
     return (

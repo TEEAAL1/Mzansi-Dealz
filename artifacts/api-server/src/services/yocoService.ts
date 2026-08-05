@@ -65,6 +65,26 @@ export async function createYocoCheckout(input: {
   return body;
 }
 
+export async function getYocoCheckout(checkoutId: string) {
+  const secret = getSecret();
+  if (!secret) throw new Error("Yoco is not configured");
+
+  const response = await fetch(`${YOCO_API_URL}/checkouts/${encodeURIComponent(checkoutId)}`, {
+    headers: { Authorization: `Bearer ${secret}`, Accept: "application/json" },
+  });
+  const body = (await response.json().catch(() => ({}))) as {
+    id?: string;
+    status?: string;
+    paymentId?: string | null;
+    error?: string;
+    message?: string;
+  };
+  if (!response.ok) {
+    throw new Error(body.error || body.message || `Yoco checkout lookup failed with status ${response.status}`);
+  }
+  return body;
+}
+
 export function verifyYocoWebhook(rawBody: Buffer, headers: Record<string, string | string[] | undefined>) {
   const secret = process.env.YOCO_WEBHOOK_SECRET;
   if (!secret) throw new Error("Yoco webhook secret is not configured");

@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, ordersTable, orderItemsTable, productsTable, paymentsTable } from "@workspace/db";
 import { CreateCheckoutBody } from "@workspace/api-zod";
-import { createYocoCheckout, isYocoConfigured, verifyYocoWebhook } from "../services/yocoService";
+import { createYocoCheckout, getYocoCheckout, isYocoConfigured, verifyYocoWebhook } from "../services/yocoService";
 import { buildPayfastData, isPayfastConfigured, verifyPayfastItn } from "../services/payfastService";
 import {
   getPaymentSettings,
@@ -302,6 +302,52 @@ router.post("/checkout/retry/:orderNumber", async (req, res) => {
   }
 });
 
+// Yoco's success URL is only a customer redirect, not proof of payment.
+// Reconcile the checkout server-side as a fallback when a webhook is delayed.
+router.post("/checkout/reconcile/:orderNumber", async (req, res) => {
+  const email = typeof req.body?.customerEmail === "string" ? req.body.customerEmail.trim().toLowerCase() : "";
+  if (!email) {
+    res.status(400).json({ error: "Customer email is required to reconcile payment" });
+    return;
+  }
+
+  try {
+    const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, req.params.orderNumber)).limit(1);
+    if (!order || order.customerEmail.toLowerCase() !== email) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    if (order.status === "paid") {
+      res.json({ status: "paid" });
+      return;
+    }
+
+    const [payment] = await db.select().from(paymentsTable)
+      .where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "yoco")))
+      .orderBy(desc(paymentsTable.createdAt))
+      .limit(1);
+    if (!payment?.providerCheckoutId) {
+      res.json({ status: order.status });
+      return;
+    }
+
+    const checkout = await getYocoCheckout(payment.providerCheckoutId);
+    const status = String(checkout.status ?? "").toLowerCase();
+    if (["completed", "succeeded", "paid", "success"].includes(status)) {
+      await settlePayment(payment.reference, checkout.paymentId ?? payment.providerCheckoutId);
+      res.json({ status: "paid" });
+      return;
+    }
+    if (["failed", "cancelled", "canceled"].includes(status)) {
+      await markPaymentFailed(payment.reference);
+    }
+    res.json({ status: status || order.status });
+  } catch (error) {
+    req.log.error({ err: error, orderNumber: req.params.orderNumber }, "Yoco checkout reconciliation failed");
+    res.status(502).json({ error: "Payment status is temporarily unavailable" });
+  }
+});
+
 router.post("/checkout/notify", async (req, res) => {
   res.status(200).send("OK");
   try {
@@ -339,29 +385,49 @@ router.post("/webhooks/yoco", async (req, res) => {
       res.status(400).json({ error: "Invalid webhook signature" });
       return;
     }
-    const event = req.body as { id?: string; type?: string; payload?: Record<string, unknown> };
+    const event = req.body as {
+      id?: string;
+      type?: string;
+      payload?: Record<string, unknown>;
+      data?: Record<string, unknown>;
+    };
     if (!event.id || await hasProcessedEvent("yoco", event.id)) {
       res.status(200).json({ received: true });
       return;
     }
-    const payload = event.payload ?? {};
+    // Yoco has used both `payload` and `data` envelopes across webhook
+    // versions. Keep the signature check strict, but normalize the signed
+    // event body before resolving the merchant order.
+    const payload = event.payload ?? event.data ?? {};
     const metadata = (payload.metadata ?? {}) as Record<string, unknown>;
-    const orderNumber = String(metadata.orderNumber ?? payload.clientReferenceId ?? payload.externalId ?? "");
-    const paymentId = typeof payload.paymentId === "string" ? payload.paymentId : undefined;
-    if (orderNumber && (event.type === "payment.succeeded" || event.type === "checkout.completed" || event.type === "payment.success")) {
+    const orderNumber = String(
+      metadata.orderNumber ??
+      payload.clientReferenceId ??
+      payload.externalId ??
+      payload.orderNumber ??
+      "",
+    );
+    const paymentId =
+      typeof payload.paymentId === "string"
+        ? payload.paymentId
+        : typeof payload.id === "string" && event.type?.startsWith("payment.")
+          ? payload.id
+          : undefined;
+    const eventType = String(event.type ?? payload.type ?? "").toLowerCase();
+    if (orderNumber && ["payment.succeeded", "checkout.completed", "payment.success", "checkout.succeeded"].includes(eventType)) {
       const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
       if (order) {
         const [payment] = await db.select().from(paymentsTable).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "yoco"))).orderBy(desc(paymentsTable.createdAt)).limit(1);
         if (payment) await settlePayment(payment.reference, paymentId);
       }
-    } else if (orderNumber && (event.type === "payment.failed" || event.type === "checkout.failed")) {
+    } else if (orderNumber && ["payment.failed", "checkout.failed", "payment.cancelled", "checkout.cancelled"].includes(eventType)) {
       const [order] = await db.select().from(ordersTable).where(eq(ordersTable.orderNumber, orderNumber)).limit(1);
       if (order) {
         const [payment] = await db.select().from(paymentsTable).where(and(eq(paymentsTable.orderId, order.id), eq(paymentsTable.gateway, "yoco"))).orderBy(desc(paymentsTable.createdAt)).limit(1);
         if (payment) await markPaymentFailed(payment.reference);
       }
     }
-    await recordEvent("yoco", event.id, event.type ?? "unknown", event, orderNumber || undefined);
+    await recordEvent("yoco", event.id, eventType || "unknown", event, orderNumber || undefined);
     res.status(200).json({ received: true });
   } catch (error) {
     req.log.error({ err: error }, "Yoco webhook processing failed");

@@ -9,7 +9,11 @@ export function useAdminToken() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    fetch(apiUrl("/api/admin/session"), { credentials: "include" })
+    fetch(apiUrl("/api/admin/session"), {
+      credentials: "include",
+      cache: "no-store",
+      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+    })
       .then((response) => response.json())
       .then((data: { authenticated?: boolean; csrfToken?: string }) => {
         if (data.authenticated) {
