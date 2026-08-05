@@ -32,7 +32,10 @@ export default function Shop({ params }: { params?: { category?: string } }) {
   const [minPrice, setMinPrice] = useState(initialMinPrice);
   const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
   const [brand, setBrand] = useState(initialBrand);
-  const limit = 12;
+  // A full catalogue page should feel useful without becoming overwhelming.
+  // Twenty-four products gives shoppers enough choice while keeping pagination
+  // predictable across desktop and mobile.
+  const limit = 24;
 
   const categorySlug = params?.category;
 
@@ -180,7 +183,7 @@ export default function Shop({ params }: { params?: { category?: string } }) {
         </aside>
 
         {/* Product Grid */}
-        <div className="flex-1 flex flex-col min-h-[50vh]">
+         <div className="flex-1 flex flex-col">
           {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {Array(8).fill(0).map((_, i) => (
@@ -203,11 +206,18 @@ export default function Shop({ params }: { params?: { category?: string } }) {
             </div>
           ) : (
             <>
-              <div className="mb-4 text-sm text-muted-foreground">
-                Showing <span className="font-bold text-foreground">{productData?.products.length}</span> of <span className="font-bold text-foreground">{productData?.total}</span> deals
+               <div className="mb-5 flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                 <span>
+                   Showing{" "}
+                   <span className="font-bold text-foreground">
+                     {Math.min((page - 1) * limit + 1, productData?.total || 0)}–{Math.min(page * limit, productData?.total || 0)}
+                   </span>{" "}
+                   of <span className="font-bold text-foreground">{productData?.total}</span> deals
+                 </span>
+                 <span className="text-xs font-medium uppercase tracking-[0.12em]">Page {page} of {totalPages}</span>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-12">
+               <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 xl:grid-cols-4">
                 {productData?.products.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -215,7 +225,7 @@ export default function Shop({ params }: { params?: { category?: string } }) {
 
               {/* Pagination (Simple) */}
               {productData && productData.total > limit && (
-                <div className="mt-auto flex flex-wrap items-center justify-center gap-2 border-t border-border pt-8">
+                <div className="mt-12 flex flex-wrap items-center justify-center gap-2 border-t border-border pt-8">
                   <Button 
                     variant="outline" 
                      onClick={() => updateQuery({ page: page > 2 ? String(page - 1) : undefined })}
@@ -229,7 +239,6 @@ export default function Shop({ params }: { params?: { category?: string } }) {
                        <Button variant={page === number ? "default" : "outline"} aria-current={page === number ? "page" : undefined} onClick={() => updateQuery({ page: number === 1 ? undefined : String(number) })} className="h-10 w-10 px-0">{number}</Button>
                      </span>
                    ))}
-                   <span className="sr-only">Page {page} of {totalPages}</span>
                   <Button 
                     variant="outline" 
                      onClick={() => updateQuery({ page: String(page + 1) })}
