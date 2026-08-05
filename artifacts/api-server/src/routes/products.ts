@@ -8,6 +8,7 @@ import {
   GetProductParams,
 } from "@workspace/api-zod";
 import { normalizeCatalogueBrand, sanitizeCatalogueText } from "../services/catalogueBrand";
+import { getOrCreateTopSellerSettings, normalizeTopSellerSettings, resolveTopSellerRows } from "../services/topSellerService";
 
 const router = Router();
 
@@ -88,6 +89,18 @@ router.get("/products/new-arrivals", async (req, res) => {
     .limit(limit);
 
   res.json(rows.map((r) => toProductResponse(r.product, r.category?.name ?? "")));
+});
+
+router.get("/products/top-sellers", async (_req, res) => {
+  const settings = await getOrCreateTopSellerSettings();
+  const config = normalizeTopSellerSettings(settings);
+  const rows = await resolveTopSellerRows(config);
+  res.json({
+    mode: config.mode,
+    displayLimit: config.displayLimit,
+    products: rows.map((r) => toProductResponse(r.product, r.category?.name ?? "")),
+    updatedAt: settings.updatedAt.toISOString(),
+  });
 });
 
 router.get("/products/stats", async (req, res) => {

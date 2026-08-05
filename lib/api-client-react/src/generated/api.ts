@@ -26,6 +26,7 @@ import type {
   AdminPaymentList,
   AdminPaymentSettings,
   AdminStats,
+  AdminTopSellerResponse,
   Category,
   CheckoutOptions,
   CheckoutRequest,
@@ -40,7 +41,6 @@ import type {
   ListAdminPaymentTransactions200,
   ListProductsParams,
   OrderDetail,
-  PaymentSettingsInput,
   Product,
   ProductImportOptions,
   ProductImportProgressResponse,
@@ -50,6 +50,8 @@ import type {
   ProductStats,
   RefundAdminPaymentBody,
   RetryCheckoutInput,
+  TopSellerResponse,
+  TopSellerSettingsInput,
   UpdateOrderStatusRequest,
   UploadProductImportCsvBody
 } from './api.schemas';
@@ -383,6 +385,83 @@ export function useGetNewArrivals<TData = Awaited<ReturnType<typeof getNewArriva
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetNewArrivalsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTopSellersUrl = () => {
+
+
+
+
+  return `/api/products/top-sellers`
+}
+
+/**
+ * @summary Get the active top seller merchandising lineup
+ */
+export const getTopSellers = async ( options?: RequestInit): Promise<TopSellerResponse> => {
+
+  return customFetch<TopSellerResponse>(getGetTopSellersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTopSellersQueryKey = () => {
+    return [
+    `/api/products/top-sellers`
+    ] as const;
+    }
+
+
+export const getGetTopSellersQueryOptions = <TData = Awaited<ReturnType<typeof getTopSellers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopSellers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTopSellersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTopSellers>>> = ({ signal }) => getTopSellers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTopSellers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTopSellersQueryResult = NonNullable<Awaited<ReturnType<typeof getTopSellers>>>
+export type GetTopSellersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the active top seller merchandising lineup
+ */
+
+export function useGetTopSellers<TData = Awaited<ReturnType<typeof getTopSellers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTopSellers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTopSellersQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1007,37 +1086,114 @@ export function useGetAdminPaymentSettings<TData = Awaited<ReturnType<typeof get
 
 
 
-export const getUpdateAdminPaymentSettingsUrl = () => {
+export const getGetAdminTopSellersUrl = () => {
 
 
 
 
-  return `/api/admin/payment-settings`
+  return `/api/admin/top-sellers`
 }
 
 /**
- * @summary Update payment gateway settings
+ * @summary Get top seller merchandising settings and previews
  */
-export const updateAdminPaymentSettings = async (paymentSettingsInput: PaymentSettingsInput, options?: RequestInit): Promise<AdminPaymentSettings> => {
+export const getAdminTopSellers = async ( options?: RequestInit): Promise<AdminTopSellerResponse> => {
 
-  return customFetch<AdminPaymentSettings>(getUpdateAdminPaymentSettingsUrl(),
+  return customFetch<AdminTopSellerResponse>(getGetAdminTopSellersUrl(),
   {
     ...options,
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      paymentSettingsInput,)
+    method: 'GET'
+
+
   }
 );}
 
 
 
 
-export const getUpdateAdminPaymentSettingsMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPaymentSettings>>, TError,{data: BodyType<PaymentSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateAdminPaymentSettings>>, TError,{data: BodyType<PaymentSettingsInput>}, TContext> => {
 
-const mutationKey = ['updateAdminPaymentSettings'];
+export const getGetAdminTopSellersQueryKey = () => {
+    return [
+    `/api/admin/top-sellers`
+    ] as const;
+    }
+
+
+export const getGetAdminTopSellersQueryOptions = <TData = Awaited<ReturnType<typeof getAdminTopSellers>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminTopSellers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminTopSellersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminTopSellers>>> = ({ signal }) => getAdminTopSellers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminTopSellers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminTopSellersQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminTopSellers>>>
+export type GetAdminTopSellersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get top seller merchandising settings and previews
+ */
+
+export function useGetAdminTopSellers<TData = Awaited<ReturnType<typeof getAdminTopSellers>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminTopSellers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminTopSellersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAdminTopSellersUrl = () => {
+
+
+
+
+  return `/api/admin/top-sellers`
+}
+
+/**
+ * @summary Update top seller merchandising settings
+ */
+export const updateAdminTopSellers = async (topSellerSettingsInput: TopSellerSettingsInput, options?: RequestInit): Promise<AdminTopSellerResponse> => {
+
+  return customFetch<AdminTopSellerResponse>(getUpdateAdminTopSellersUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      topSellerSettingsInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAdminTopSellersMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTopSellers>>, TError,{data: BodyType<TopSellerSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminTopSellers>>, TError,{data: BodyType<TopSellerSettingsInput>}, TContext> => {
+
+const mutationKey = ['updateAdminTopSellers'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1047,10 +1203,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminPaymentSettings>>, {data: BodyType<PaymentSettingsInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminTopSellers>>, {data: BodyType<TopSellerSettingsInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  updateAdminPaymentSettings(data,requestOptions)
+          return  updateAdminTopSellers(data,requestOptions)
         }
 
 
@@ -1060,22 +1216,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type UpdateAdminPaymentSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminPaymentSettings>>>
-    export type UpdateAdminPaymentSettingsMutationBody = BodyType<PaymentSettingsInput>
-    export type UpdateAdminPaymentSettingsMutationError = ErrorType<void>
+    export type UpdateAdminTopSellersMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminTopSellers>>>
+    export type UpdateAdminTopSellersMutationBody = BodyType<TopSellerSettingsInput>
+    export type UpdateAdminTopSellersMutationError = ErrorType<void>
 
     /**
- * @summary Update payment gateway settings
+ * @summary Update top seller merchandising settings
  */
-export const useUpdateAdminPaymentSettings = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminPaymentSettings>>, TError,{data: BodyType<PaymentSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useUpdateAdminTopSellers = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminTopSellers>>, TError,{data: BodyType<TopSellerSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof updateAdminPaymentSettings>>,
+        Awaited<ReturnType<typeof updateAdminTopSellers>>,
         TError,
-        {data: BodyType<PaymentSettingsInput>},
+        {data: BodyType<TopSellerSettingsInput>},
         TContext
       > => {
-      return useMutation(getUpdateAdminPaymentSettingsMutationOptions(options));
+      return useMutation(getUpdateAdminTopSellersMutationOptions(options));
     }
 
 export const getListAdminPaymentsUrl = () => {

@@ -63,6 +63,77 @@ export interface ProductList {
   total: number;
 }
 
+export type TopSellerSettingsInputMode = typeof TopSellerSettingsInputMode[keyof typeof TopSellerSettingsInputMode];
+
+
+export const TopSellerSettingsInputMode = {
+  automatic: 'automatic',
+  curated: 'curated',
+} as const;
+
+export type TopSellerSettingsInputDisplayLimit = typeof TopSellerSettingsInputDisplayLimit[keyof typeof TopSellerSettingsInputDisplayLimit];
+
+
+export const TopSellerSettingsInputDisplayLimit = {
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+} as const;
+
+export interface TopSellerSettingsInput {
+  mode: TopSellerSettingsInputMode;
+  displayLimit: TopSellerSettingsInputDisplayLimit;
+  curatedProductIds: number[];
+}
+
+export type TopSellerResponseMode = typeof TopSellerResponseMode[keyof typeof TopSellerResponseMode];
+
+
+export const TopSellerResponseMode = {
+  automatic: 'automatic',
+  curated: 'curated',
+} as const;
+
+export type TopSellerResponseDisplayLimit = typeof TopSellerResponseDisplayLimit[keyof typeof TopSellerResponseDisplayLimit];
+
+
+export const TopSellerResponseDisplayLimit = {
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+} as const;
+
+export interface TopSellerResponse {
+  mode: TopSellerResponseMode;
+  displayLimit: TopSellerResponseDisplayLimit;
+  products: Product[];
+  updatedAt: string;
+}
+
+export type AdminTopSellerResponseMode = typeof AdminTopSellerResponseMode[keyof typeof AdminTopSellerResponseMode];
+
+
+export const AdminTopSellerResponseMode = {
+  automatic: 'automatic',
+  curated: 'curated',
+} as const;
+
+export type AdminTopSellerResponseDisplayLimit = typeof AdminTopSellerResponseDisplayLimit[keyof typeof AdminTopSellerResponseDisplayLimit];
+
+
+export const AdminTopSellerResponseDisplayLimit = {
+  NUMBER_5: 5,
+  NUMBER_10: 10,
+} as const;
+
+export interface AdminTopSellerResponse {
+  mode: AdminTopSellerResponseMode;
+  displayLimit: AdminTopSellerResponseDisplayLimit;
+  curatedProductIds: number[];
+  products: Product[];
+  automaticProducts: Product[];
+  curatedProducts: Product[];
+  updatedAt: string;
+}
+
 export interface Category {
   id: number;
   name: string;

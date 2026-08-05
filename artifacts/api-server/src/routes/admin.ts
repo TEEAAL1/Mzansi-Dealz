@@ -7,6 +7,7 @@ import {
   categoriesTable,
   paymentsTable,
   paymentTransactionsTable,
+  topSellerSettingsTable,
 } from "@workspace/db";
 import { eq, desc, sql, count, sum } from "drizzle-orm";
 import { z } from "zod";
@@ -25,6 +26,15 @@ import {
 } from "../services/paymentService";
 import { isYocoWebhookConfigured, refundYocoCheckout } from "../services/yocoService";
 import { normalizeCatalogueBrand, sanitizeCatalogueText } from "../services/catalogueBrand";
+import {
+  getOrCreateTopSellerSettings,
+  normalizeTopSellerSettings,
+  resolveTopSellerPreviews,
+  resolveTopSellerRows,
+  validateCuratedProductIds,
+  type TopSellerLimit,
+  type TopSellerMode,
+} from "../services/topSellerService";
 
 const router = Router();
 
@@ -207,6 +217,75 @@ router.get("/admin/payment-settings", requireAdmin, async (_req, res) => {
     payfastConfigured: Boolean(process.env.PAYFAST_MERCHANT_ID && process.env.PAYFAST_MERCHANT_KEY),
     emailConfigured: Boolean(process.env.EMAIL_PROVIDER),
   });
+});
+
+function toAdminTopSellerResponse(
+  settings: Awaited<ReturnType<typeof getOrCreateTopSellerSettings>>,
+  rows: Awaited<ReturnType<typeof resolveTopSellerRows>>,
+  previews: Awaited<ReturnType<typeof resolveTopSellerPreviews>>,
+) {
+  return {
+    mode: settings.mode,
+    displayLimit: settings.displayLimit,
+    curatedProductIds: settings.curatedProductIds,
+    products: rows.map((r) => toProductResponse(r.product, r.category?.name ?? "")),
+    automaticProducts: previews.automaticRows.map((r) => toProductResponse(r.product, r.category?.name ?? "")),
+    curatedProducts: previews.curatedRows.map((r) => toProductResponse(r.product, r.category?.name ?? "")),
+    updatedAt: settings.updatedAt.toISOString(),
+  };
+}
+
+router.get("/admin/top-sellers", requireAdmin, async (_req, res) => {
+  const settings = await getOrCreateTopSellerSettings();
+  const config = normalizeTopSellerSettings(settings);
+  const [rows, previews] = await Promise.all([
+    resolveTopSellerRows(config),
+    resolveTopSellerPreviews(config),
+  ]);
+  res.json(toAdminTopSellerResponse(settings, rows, previews));
+});
+
+router.put("/admin/top-sellers", requireAdmin, async (req, res) => {
+  const parsed = z.object({
+    mode: z.enum(["automatic", "curated"]),
+    displayLimit: z.union([z.literal(5), z.literal(10)]),
+    curatedProductIds: z.array(z.number().int().positive()).max(10),
+  }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Choose automatic or curated mode and a 5 or 10 product limit." });
+    return;
+  }
+
+  const { mode, displayLimit, curatedProductIds } = parsed.data as {
+    mode: TopSellerMode;
+    displayLimit: TopSellerLimit;
+    curatedProductIds: number[];
+  };
+  if (mode === "curated") {
+    const validation = await validateCuratedProductIds(curatedProductIds, displayLimit);
+    if ("error" in validation) {
+      res.status(400).json({ error: validation.error });
+      return;
+    }
+  }
+
+  const current = await getOrCreateTopSellerSettings();
+  const [updated] = await db
+    .update(topSellerSettingsTable)
+    .set({
+      mode,
+      displayLimit,
+      curatedProductIds,
+      updatedAt: new Date(),
+    })
+    .where(eq(topSellerSettingsTable.id, current.id))
+    .returning();
+  const config = normalizeTopSellerSettings(updated);
+  const [rows, previews] = await Promise.all([
+    resolveTopSellerRows(config),
+    resolveTopSellerPreviews(config),
+  ]);
+  res.json(toAdminTopSellerResponse(updated, rows, previews));
 });
 
 router.put("/admin/payment-settings", requireAdmin, async (req, res) => {

@@ -30,6 +30,7 @@ import AdminProductForm from "@/pages/admin/AdminProductForm";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminPaymentSettings from "@/pages/admin/AdminPaymentSettings";
+import AdminTopSellers from "@/pages/admin/AdminTopSellers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +85,7 @@ function AdminRoutes() {
         <Route path="/orders" component={AdminOrders} />
         <Route path="/payments" component={AdminPayments} />
         <Route path="/settings/payments" component={AdminPaymentSettings} />
+        <Route path="/settings/top-sellers" component={AdminTopSellers} />
         <Route component={NotFound} />
       </Switch>
     </AdminLayout>

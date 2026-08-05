@@ -162,6 +162,49 @@ export const GetNewArrivalsResponse = zod.array(GetNewArrivalsResponseItem)
 
 
 /**
+ * @summary Get the active top seller merchandising lineup
+ */
+export const GetTopSellersResponse = zod.object({
+  "mode": zod.enum(['automatic', 'curated']),
+  "displayLimit": zod.union([zod.literal(5),zod.literal(10)]),
+  "products": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get product statistics summary
  */
 export const GetProductStatsResponse = zod.object({
@@ -311,30 +354,229 @@ export const GetAdminPaymentSettingsResponse = zod.object({
 
 
 /**
- * @summary Update payment gateway settings
+ * @summary Get top seller merchandising settings and previews
  */
-export const UpdateAdminPaymentSettingsBody = zod.object({
-  "currency": zod.enum(['ZAR']),
-  "defaultGateway": zod.enum(['yoco', 'payfast']),
-  "yocoEnabled": zod.boolean(),
-  "payfastEnabled": zod.boolean(),
-  "payfastSandbox": zod.boolean()
+export const GetAdminTopSellersResponse = zod.object({
+  "mode": zod.enum(['automatic', 'curated']),
+  "displayLimit": zod.union([zod.literal(5),zod.literal(10)]),
+  "curatedProductIds": zod.array(zod.number()),
+  "products": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "automaticProducts": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "curatedProducts": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "updatedAt": zod.coerce.date()
 })
 
-export const UpdateAdminPaymentSettingsResponse = zod.object({
-  "currency": zod.enum(['ZAR']),
-  "defaultGateway": zod.enum(['yoco', 'payfast']),
-  "yocoEnabled": zod.boolean(),
-  "payfastEnabled": zod.boolean(),
-  "payfastSandbox": zod.boolean()
-}).and(zod.object({
+
+/**
+ * @summary Update top seller merchandising settings
+ */
+export const UpdateAdminTopSellersBody = zod.object({
+  "mode": zod.enum(['automatic', 'curated']),
+  "displayLimit": zod.union([zod.literal(5),zod.literal(10)]),
+  "curatedProductIds": zod.array(zod.number())
+})
+
+export const UpdateAdminTopSellersResponse = zod.object({
+  "mode": zod.enum(['automatic', 'curated']),
+  "displayLimit": zod.union([zod.literal(5),zod.literal(10)]),
+  "curatedProductIds": zod.array(zod.number()),
+  "products": zod.array(zod.object({
   "id": zod.number(),
-  "yocoConfigured": zod.boolean(),
-  "yocoWebhookConfigured": zod.boolean(),
-  "payfastConfigured": zod.boolean(),
-  "emailConfigured": zod.boolean(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "automaticProducts": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
+  "curatedProducts": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "originalPrice": zod.number(),
+  "discountPercent": zod.number(),
+  "categoryId": zod.number(),
+  "categoryName": zod.string(),
+  "imageUrl": zod.string(),
+  "inStock": zod.boolean(),
+  "stockCount": zod.number().nullish(),
+  "isFeatured": zod.boolean(),
+  "isNewArrival": zod.boolean(),
+  "onSale": zod.boolean(),
+  "tags": zod.string().nullish(),
+  "categorySlug": zod.string().optional(),
+  "sku": zod.string().nullish(),
+  "brand": zod.string().nullish(),
+  "specifications": zod.string().nullish(),
+  "features": zod.string().nullish(),
+  "galleryImages": zod.string().nullish(),
+  "stockStatus": zod.string().nullish(),
+  "weight": zod.string().nullish(),
+  "dimensions": zod.string().nullish(),
+  "variants": zod.string().nullish(),
+  "metaTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "searchKeywords": zod.string().nullish(),
+  "status": zod.string().optional(),
+  "createdAt": zod.string()
+})),
   "updatedAt": zod.coerce.date()
-}))
+})
 
 
 /**

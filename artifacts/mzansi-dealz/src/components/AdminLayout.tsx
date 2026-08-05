@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ArrowLeft, CreditCard, Settings, UploadCloud } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Tags, LogOut, ArrowLeft, CreditCard, Settings, UploadCloud, TrendingUp } from "lucide-react";
 import { useAdminAuth } from "@/hooks/use-admin";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Products", href: "/products", icon: Package },
+    { name: "Top sellers", href: "/settings/top-sellers", icon: TrendingUp },
     { name: "Import products", href: "/products/import", icon: UploadCloud },
     { name: "Categories", href: "/categories", icon: Tags },
     { name: "Orders", href: "/orders", icon: ShoppingBag },

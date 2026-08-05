@@ -5,6 +5,7 @@ import {
   useListProducts,
 } from "@workspace/api-client-react";
 import { ProductCard } from "@/components/ProductCard";
+import { TopSellersCarousel } from "@/components/TopSellersCarousel";
 import { Seo } from "@/components/Seo";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,29 +107,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex-1 w-full max-w-sm hidden md:block">
+            <div className="flex-1 w-full max-w-sm block">
               <div className="relative">
                 <div className="absolute inset-0 bg-accent rounded-3xl transform rotate-3 scale-105 shadow-xl" />
                 <div className="absolute inset-0 bg-secondary rounded-3xl transform -rotate-3 scale-105 shadow-xl" />
-                <div className="relative bg-card rounded-3xl p-5 shadow-2xl overflow-hidden border border-border">
-                  <div className="absolute top-4 right-4 bg-destructive text-white font-black px-3 py-1.5 rounded-lg text-base transform rotate-12 shadow-md">
-                    60% OFF
-                  </div>
-                  <img
-                    src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop"
-                    alt="Premium Wireless Headphones Deal"
-                    className="w-full h-auto rounded-xl mb-3 object-cover aspect-square"
-                  />
-                  <h3 className="text-lg font-bold text-card-foreground">Premium Wireless Headphones</h3>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-2xl font-black text-primary">R 899</span>
-                    <span className="text-sm font-medium text-muted-foreground line-through">R 2,299</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2 mt-3 overflow-hidden">
-                    <div className="bg-destructive h-full w-[85%] rounded-full" />
-                  </div>
-                  <p className="text-xs font-bold text-destructive mt-1">Almost sold out!</p>
-                </div>
+                <TopSellersCarousel />
               </div>
             </div>
           </div>

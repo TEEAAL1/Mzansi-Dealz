@@ -126,6 +126,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/Product"
 
+  /products/top-sellers:
+    get:
+      operationId: getTopSellers
+      tags: [products]
+      summary: Get the active top seller merchandising lineup
+      responses:
+        "200":
+          description: Active top seller lineup
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopSellerResponse"
+
   /products/stats:
     get:
       operationId: getProductStats
@@ -278,23 +291,38 @@ paths:
                 $ref: "#/components/schemas/AdminPaymentSettings"
         "401":
           description: Unauthorized
-    put:
-      operationId: updateAdminPaymentSettings
+
+  /admin/top-sellers:
+    get:
+      operationId: getAdminTopSellers
       tags: [admin]
-      summary: Update payment gateway settings
+      summary: Get top seller merchandising settings and previews
+      responses:
+        "200":
+          description: Top seller settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminTopSellerResponse"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateAdminTopSellers
+      tags: [admin]
+      summary: Update top seller merchandising settings
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PaymentSettingsInput"
+              $ref: "#/components/schemas/TopSellerSettingsInput"
       responses:
         "200":
-          description: Updated payment settings
+          description: Updated top seller settings
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminPaymentSettings"
+                $ref: "#/components/schemas/AdminTopSellerResponse"
         "400":
           description: Invalid settings
         "401":
@@ -925,6 +953,69 @@ components:
             $ref: "#/components/schemas/Product"
         total:
           type: integer
+
+    TopSellerSettingsInput:
+      type: object
+      required: [mode, displayLimit, curatedProductIds]
+      properties:
+        mode:
+          type: string
+          enum: [automatic, curated]
+        displayLimit:
+          type: integer
+          enum: [5, 10]
+        curatedProductIds:
+          type: array
+          items:
+            type: integer
+
+    TopSellerResponse:
+      type: object
+      required: [mode, displayLimit, products, updatedAt]
+      properties:
+        mode:
+          type: string
+          enum: [automatic, curated]
+        displayLimit:
+          type: integer
+          enum: [5, 10]
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        updatedAt:
+          type: string
+          format: date-time
+
+    AdminTopSellerResponse:
+      type: object
+      required: [mode, displayLimit, curatedProductIds, products, automaticProducts, curatedProducts, updatedAt]
+      properties:
+        mode:
+          type: string
+          enum: [automatic, curated]
+        displayLimit:
+          type: integer
+          enum: [5, 10]
+        curatedProductIds:
+          type: array
+          items:
+            type: integer
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        automaticProducts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        curatedProducts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        updatedAt:
+          type: string
+          format: date-time
 
     Category:
       type: object
