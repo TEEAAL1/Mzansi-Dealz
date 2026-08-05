@@ -7,4 +7,4 @@ Payment checkout intentionally refuses to create orders when no configured gatew
 
 **Why:** The original checkout used hardcoded PayFast sandbox values, which could send real customer flows into an invalid or unsafe payment path.
 
-**How to apply:** Register the Yoco webhook through the Yoco API, store the one-time generated signing secret securely, verify webhook signatures, enable the gateway in admin payment settings, and only then publish live payments.
+**How to apply:** Register the Yoco webhook through the Yoco API against the public published API endpoint, store the one-time generated signing secret securely, verify webhook signatures, enable the gateway in admin payment settings, and only then publish live payments. A successful customer redirect is not payment proof; settlement must come from the webhook or a server-side provider-status reconciliation.
