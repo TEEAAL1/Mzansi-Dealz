@@ -1,0 +1,414 @@
+# Mzansi Dealz - Priority Store Improvement & Cleanup
+
+You are acting as a Senior Shopify/E-commerce UX Designer, Frontend Engineer, and CRO (Conversion Rate Optimization) Specialist.
+
+Your objective is to transform Mzansi Dealz into a premium South African e-commerce store that looks and feels comparable to Takealot, Makro, and Incredible Connection while keeping the existing functionality intact.
+
+## IMPORTANT
+
+Prioritize tasks exactly in the order below.
+
+Do NOT build unnecessary new features before completing the high-priority items.
+
+Focus on improving trust, usability, branding, and conversion rate.
+
+---
+
+# PRIORITY 1 (CRITICAL)
+
+## Replace all Perfect Dealz branding
+
+Search the entire project and replace every occurrence of:
+
+* Perfect Dealz
+* PerfectDealz
+* perfectdealz
+* perfectdealz.co.za
+
+with
+
+Mzansi Dealz
+
+This includes:
+
+* Product metadata
+* Product descriptions
+* Footer
+* Header
+* Meta tags
+* SEO titles
+* Image alt text
+* Checkout wording
+* Emails
+* Policies
+* Copyright notices
+* Admin labels
+* Hidden text
+* Structured data
+* JSON files
+* Any hardcoded references
+
+No references to Perfect Dealz should remain anywhere in the application.
+
+---
+
+# PRIORITY 2
+
+## Audit every product
+
+Go through every product.
+
+Identify missing:
+
+* Product images
+* Feature images
+* Product description
+* Bullet points
+* Specifications
+* Dimensions
+* Weight
+* Delivery information
+* Warranty information
+* Image ALT tags
+
+If product information exists elsewhere in the project, populate missing fields automatically.
+
+If images are missing:
+
+* Use the best available product image.
+* Ensure image quality is consistent.
+* Prevent blank image placeholders.
+* Maintain consistent image sizing across the catalogue.
+
+---
+
+# PRIORITY 3
+
+## Improve product pages
+
+Every product page should include:
+
+* Large primary image
+* Thumbnail gallery
+* Zoom capability
+* Clear pricing
+* Savings badge (if applicable)
+* Stock availability
+* Delivery estimate
+* Secure checkout badges
+* Returns information
+* Product specifications
+* Related products
+* Recently viewed products
+
+Improve spacing and typography.
+
+Ensure all pages are mobile responsive.
+
+---
+
+# PRIORITY 4
+
+## Improve category pagination
+
+Currently customers cannot easily see how many product pages exist.
+
+Implement numbered pagination.
+
+Example:
+
+< Previous
+
+1 2 3 4 5 6
+
+Next >
+
+Requirements:
+
+* Show current page
+* Show total pages
+* Allow direct page selection
+* Mobile friendly
+* SEO friendly URLs
+* Preserve sorting and filters when changing pages
+
+Do NOT use endless scrolling.
+
+---
+
+# PRIORITY 5
+
+## Homepage improvements
+
+Improve visual hierarchy.
+
+The homepage should contain:
+
+Hero Banner
+
+Flash Deals
+
+Top Categories
+
+Featured Products
+
+Best Sellers
+
+New Arrivals
+
+Why Shop With Us
+
+Customer Reviews
+
+Newsletter Signup
+
+Footer
+
+Improve spacing.
+
+Improve typography.
+
+Improve section alignment.
+
+Improve responsiveness.
+
+---
+
+# PRIORITY 6
+
+## Improve trust
+
+Add:
+
+Secure Checkout icons
+
+Visa
+
+Mastercard
+
+Yoco
+
+Ozow
+
+SSL Secure Checkout
+
+Money Back Guarantee
+
+Fast Nationwide Delivery
+
+Secure Payments
+
+Easy Returns
+
+These should appear naturally throughout the website without clutter.
+
+---
+
+# PRIORITY 7
+
+## Improve product cards
+
+Each product card should show:
+
+Product Image
+
+Product Name
+
+Price
+
+Old Price (if discounted)
+
+Discount Percentage
+
+Stock Indicator
+
+Quick View
+
+Add to Cart
+
+Wishlist
+
+Hover animation
+
+Cards should all have identical heights.
+
+---
+
+# PRIORITY 8
+
+## Search and filters
+
+Improve search experience.
+
+Search should support:
+
+Misspellings
+
+Partial matches
+
+Category filtering
+
+Brand filtering
+
+Price filtering
+
+Sorting by:
+
+Newest
+
+Best Selling
+
+Lowest Price
+
+Highest Price
+
+Biggest Discount
+
+---
+
+# PRIORITY 9
+
+## Performance
+
+Optimise:
+
+Image loading
+
+Lazy loading
+
+Caching
+
+JavaScript bundles
+
+CSS
+
+Fonts
+
+Reduce unnecessary API requests.
+
+Improve Lighthouse performance.
+
+Target:
+
+Performance > 90
+
+Accessibility > 95
+
+Best Practices > 95
+
+SEO > 95
+
+---
+
+# PRIORITY 10
+
+## SEO improvements
+
+Generate:
+
+Unique meta titles
+
+Meta descriptions
+
+Canonical URLs
+
+Schema markup
+
+Open Graph tags
+
+Twitter cards
+
+Improve heading structure.
+
+Improve image alt text.
+
+Generate XML sitemap if missing.
+
+---
+
+# PRIORITY 11
+
+## Mobile optimisation
+
+Ensure every page works perfectly on:
+
+Android
+
+iPhone
+
+Tablet
+
+No overflow.
+
+No broken layouts.
+
+Buttons must be easy to tap.
+
+---
+
+# PRIORITY 12
+
+## Visual consistency
+
+Standardise:
+
+Margins
+
+Padding
+
+Button sizes
+
+Fonts
+
+Colours
+
+Cards
+
+Icons
+
+Border radius
+
+Shadows
+
+Animations
+
+The site should feel premium and consistent.
+
+---
+
+# DEFER THESE FEATURES
+
+Do NOT spend development time on these until all higher-priority work is complete:
+
+* Loyalty programme
+* Rewards points
+* Referral system
+* Gamification
+* AI recommendations
+* Live chat
+* Advanced personalisation
+* Membership features
+
+These can be added in a future phase after the core shopping experience is polished.
+
+---
+
+# Final QA Checklist
+
+Before considering the work complete:
+
+* No remaining "Perfect Dealz" references anywhere.
+* No broken images.
+* No empty product information.
+* All pagination functioning correctly.
+* All buttons working.
+* Mobile responsive across all pages.
+* Fast loading throughout the site.
+* Consistent branding.
+* Consistent spacing.
+* No console errors.
+* No TypeScript or build errors.
+* Successful production build.
+* Successful deployment without regressions.
+
+The final result should make Mzansi Dealz feel like a modern, trustworthy, and conversion-focused South African online retailer.
