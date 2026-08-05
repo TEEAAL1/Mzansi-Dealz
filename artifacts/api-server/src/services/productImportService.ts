@@ -6,6 +6,8 @@ import { db, categoriesTable, productImportItemsTable, productImportRunsTable, p
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
+const CATALOGUE_BRAND = "MZANSIDEALZ";
+
 export const PERFECTDEALZ_ORIGIN = "https://perfectdealz.co.za";
 const SHOPIFY_CDN_HOST = "cdn.shopify.com";
 const USER_AGENT = "MzansiDealz Product Migration/1.0 (authorized owner migration)";
@@ -309,7 +311,9 @@ function normalizeProduct(product: ShopifyProduct, sourceUrl: string): Normalize
     dimensions ? `Dimensions: ${dimensions}` : "",
   ].filter(Boolean)).join("\n");
   const category = product.product_type?.trim() || tags[0] || "Uncategorised";
-  const brand = product.vendor?.trim() || "Perfect Dealz";
+  const brand = product.vendor?.trim() === "Perfect Dealz" || !product.vendor?.trim()
+    ? CATALOGUE_BRAND
+    : product.vendor.trim();
   const keywords = unique([name, brand, category, ...tags].flatMap((value) => value.split(/[\s,]+/))).filter(Boolean);
   const metaTitle = `${name} | Mzansi Dealz`.slice(0, 60);
   const metaDescription = (description || `${name} from ${brand}.`).slice(0, 155);
@@ -525,7 +529,9 @@ function csvRowToProduct(row: Record<string, string>, sourceUrl: string): Normal
   const image = normalizeCsvImage(row.Image);
   const galleryImages = unique((row.GalleryImages || image || "").split("|").map((value) => value.trim()).filter(Boolean));
   const category = row.Category.trim() || "Uncategorised";
-  const brand = row.Brand.trim() || "Mzansi Dealz";
+  const brand = row.Brand.trim() === "Perfect Dealz" || !row.Brand.trim()
+    ? CATALOGUE_BRAND
+    : row.Brand.trim();
   const description = cleanHtml(row.Description);
   const tags = row.Tags.split("|").map((tag) => tag.trim()).filter(Boolean);
   const slug = slugify(name || sku);

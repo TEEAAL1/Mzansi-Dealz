@@ -246,8 +246,11 @@ router.get("/admin/product-import/:id/csv", requireAdmin, async (req, res): Prom
   const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`;
   const rows = items.map((item) => {
     const product = item.payload as Record<string, unknown>;
+    const brand = product.brand === "Perfect Dealz" || !String(product.brand ?? "").trim()
+      ? "MZANSIDEALZ"
+      : product.brand;
     return [
-      product.sku, product.name, product.description, product.category, product.brand, product.price,
+      product.sku, product.name, product.description, product.category, brand, product.price,
       product.salePrice, product.stock, product.image, Array.isArray(product.galleryImages) ? product.galleryImages.join("|") : "",
       product.weight, product.dimensions, Array.isArray(product.tags) ? product.tags.join("|") : "",
       product.status, product.featured,
