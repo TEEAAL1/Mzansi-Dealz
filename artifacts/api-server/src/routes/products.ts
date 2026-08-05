@@ -7,6 +7,7 @@ import {
   GetNewArrivalsQueryParams,
   GetProductParams,
 } from "@workspace/api-zod";
+import { normalizeCatalogueBrand, sanitizeCatalogueText } from "../services/catalogueBrand";
 
 const router = Router();
 
@@ -26,9 +27,9 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
   const categorySlug = categoryName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return {
     id: p.id,
-    name: p.name,
+    name: sanitizeCatalogueText(p.name) ?? "",
     slug: p.slug,
-    description: p.description,
+    description: sanitizeCatalogueText(p.description),
     price: Number(p.price),
     originalPrice: Number(p.originalPrice),
     discountPercent: p.discountPercent,
@@ -41,19 +42,19 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     isFeatured: p.isFeatured,
     isNewArrival: p.isNewArrival,
     onSale: p.onSale,
-    tags: p.tags,
+    tags: sanitizeCatalogueText(p.tags),
     sku: p.sku,
-    brand: p.brand,
-    specifications: p.specifications,
-    features: p.features,
+    brand: normalizeCatalogueBrand(p.brand),
+    specifications: sanitizeCatalogueText(p.specifications),
+    features: sanitizeCatalogueText(p.features),
     galleryImages: p.galleryImages,
     stockStatus: p.stockStatus,
     weight: p.weight,
     dimensions: p.dimensions,
     variants: p.variants,
-    metaTitle: p.metaTitle,
-    metaDescription: p.metaDescription,
-    searchKeywords: p.searchKeywords,
+    metaTitle: sanitizeCatalogueText(p.metaTitle),
+    metaDescription: sanitizeCatalogueText(p.metaDescription),
+    searchKeywords: sanitizeCatalogueText(p.searchKeywords),
     status: p.status,
     createdAt: p.createdAt.toISOString(),
   };

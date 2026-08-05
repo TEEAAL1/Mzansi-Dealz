@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db, categoriesTable } from "@workspace/db";
+import { sanitizeCatalogueText } from "../services/catalogueBrand";
 
 const router = Router();
 
@@ -16,7 +17,7 @@ router.get("/categories", async (req, res) => {
       slug: c.slug,
       icon: c.icon,
       productCount: c.productCount,
-      description: c.description,
+      description: sanitizeCatalogueText(c.description),
     }))
   );
 });

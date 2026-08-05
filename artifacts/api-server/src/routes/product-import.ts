@@ -8,13 +8,13 @@ import {
   importRun,
   rollbackRun,
   INTERNAL_MIGRATION_SOURCE_ORIGIN,
-  normalizeCatalogueBrand,
   getLatestImportRun,
   normalizeSourceOrigin,
   finalizeCrawlRun,
   createCsvImportRun,
   validateProductCsv,
 } from "../services/productImportService";
+import { normalizeCatalogueBrand } from "../services/catalogueBrand";
 
 const router = Router();
 const csvUpload = multer({

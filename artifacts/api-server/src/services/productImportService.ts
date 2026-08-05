@@ -5,9 +5,7 @@ import path from "node:path";
 import { db, categoriesTable, productImportItemsTable, productImportRunsTable, productImportSnapshotsTable, productsTable } from "@workspace/db";
 import { and, desc, eq, or, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
-
-const CATALOGUE_BRAND = "MZANSIDEALZ";
-const LEGACY_CATALOGUE_BRAND_KEY = ["perfect", "dealz"].join("");
+import { normalizeCatalogueBrand } from "./catalogueBrand";
 
 export const INTERNAL_MIGRATION_SOURCE_ORIGIN = "https://www.perfectdealz.co.za";
 const SHOPIFY_CDN_HOST = "cdn.shopify.com";
@@ -17,12 +15,6 @@ const PRODUCT_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "products");
 const CSV_PATH = path.join(PUBLIC_DIR, "mzansi-dealz-products.csv");
 const ROOT_CSV_PATH = path.resolve(process.cwd(), "mzansi-dealz-products.csv");
 const finalizedRuns = new Set<number>();
-
-export function normalizeCatalogueBrand(value: string | null | undefined): string {
-  const trimmed = value?.trim() ?? "";
-  const normalizedKey = trimmed.toLowerCase().replace(/[^a-z]/g, "");
-  return !trimmed || normalizedKey === LEGACY_CATALOGUE_BRAND_KEY ? CATALOGUE_BRAND : trimmed;
-}
 
 export type ProductImportOptions = {
   sourceUrl: string;
