@@ -26,7 +26,7 @@ export default function AdminLogin() {
         onSuccess: (res) => {
           setCsrfToken(res.csrfToken);
           setToken("session");
-          setLocation("/products");
+          setLocation("/dashboard");
         },
         onError: (err) => {
           const apiError = err as { status?: number; message?: string; url?: string };
@@ -66,6 +66,7 @@ export default function AdminLogin() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

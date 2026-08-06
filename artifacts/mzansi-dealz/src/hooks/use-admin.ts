@@ -1,39 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { apiUrl, getCsrfToken, setCsrfToken } from "@workspace/api-client-react";
 
+type AdminSessionSnapshot = "checking" | "authenticated" | "unauthenticated";
+
+const listeners = new Set<() => void>();
+let sessionState: AdminSessionSnapshot = "checking";
+let sessionCheckPromise: Promise<void> | null = null;
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+function setSessionState(nextState: AdminSessionSnapshot) {
+  sessionState = nextState;
+  if (typeof window !== "undefined") {
+    if (nextState === "authenticated") {
+      window.localStorage.setItem("mzansi_admin_authenticated", "true");
+    } else if (nextState === "unauthenticated") {
+      window.localStorage.removeItem("mzansi_admin_authenticated");
+      window.localStorage.removeItem("mzansi_admin_token");
+    }
+  }
+  notify();
+}
+
+async function checkAdminSession() {
+  if (sessionCheckPromise) return sessionCheckPromise;
+
+  sessionCheckPromise = fetch(apiUrl("/api/admin/session"), {
+    credentials: "include",
+    cache: "no-store",
+    headers: { Accept: "application/json", "Cache-Control": "no-cache" },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Admin session check failed: ${response.status}`);
+      }
+      return response.json() as Promise<{ authenticated?: boolean; csrfToken?: string }>;
+    })
+    .then((data) => {
+      if (data.authenticated) {
+        if (data.csrfToken) setCsrfToken(data.csrfToken);
+        setSessionState("authenticated");
+      } else {
+        setSessionState("unauthenticated");
+      }
+    })
+    .catch(() => {
+      setSessionState("unauthenticated");
+    })
+    .finally(() => {
+      sessionCheckPromise = null;
+    });
+
+  return sessionCheckPromise;
+}
+
 export function useAdminToken() {
-  const [token, setTokenState] = useState<string | null>(() => {
-    localStorage.removeItem("mzansi_admin_token");
-    return localStorage.getItem("mzansi_admin_authenticated") === "true" ? "session" : null;
-  });
-  const [isChecking, setIsChecking] = useState(true);
+  const snapshot = useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => sessionState,
+    () => "checking" as AdminSessionSnapshot,
+  );
 
   useEffect(() => {
-    fetch(apiUrl("/api/admin/session"), {
-      credentials: "include",
-      cache: "no-store",
-      headers: { Accept: "application/json", "Cache-Control": "no-cache" },
-    })
-      .then((response) => response.json())
-      .then((data: { authenticated?: boolean; csrfToken?: string }) => {
-        if (data.authenticated) {
-          if (data.csrfToken) {
-            setCsrfToken(data.csrfToken);
-          }
-          setTokenState("session");
-          localStorage.setItem("mzansi_admin_authenticated", "true");
-        } else {
-          setTokenState(null);
-          localStorage.removeItem("mzansi_admin_authenticated");
-        }
-      })
-      .catch(() => setTokenState(null))
-      .finally(() => setIsChecking(false));
+    if (sessionState === "checking") void checkAdminSession();
   }, []);
 
   const setToken = (newToken: string) => {
-    localStorage.setItem("mzansi_admin_authenticated", "true");
-    setTokenState(newToken || "session");
+    setSessionState(newToken ? "authenticated" : "unauthenticated");
   };
 
   const clearToken = () => {
@@ -42,12 +80,15 @@ export function useAdminToken() {
       credentials: "include",
       headers: { "x-csrf-token": getCsrfToken() ?? "" },
     });
-    localStorage.removeItem("mzansi_admin_authenticated");
-    localStorage.removeItem("mzansi_admin_token");
-    setTokenState(null);
+    setSessionState("unauthenticated");
   };
 
-  return { token, setToken, clearToken, isChecking };
+  return {
+    token: snapshot === "authenticated" ? "session" : null,
+    setToken,
+    clearToken,
+    isChecking: snapshot === "checking",
+  };
 }
 
 export function useAdminHeaders(): Record<string, string> {
