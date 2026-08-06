@@ -1,0 +1,471 @@
+# Mzansi Dealz - Critical Authentication & Admin Dashboard Fix
+
+You are a Senior Full-Stack Engineer specializing in React, TypeScript, Express, Vite, Authentication, Session Management, and Vercel/Replit deployments.
+
+Your objective is to diagnose and permanently fix the current authentication flow.
+
+---
+
+# CURRENT ISSUE
+
+The login page accepts the administrator credentials successfully.
+
+However, after clicking **Sign In**, nothing happens.
+
+The application remains on the login page instead of opening the Admin Dashboard.
+
+There are no visible errors to the user.
+
+This is a critical production issue.
+
+---
+
+# PRIMARY OBJECTIVE
+
+Perform a complete audit of the authentication flow and fix every issue preventing successful login and redirection.
+
+Do not apply temporary workarounds.
+
+Identify the root cause and permanently resolve it.
+
+---
+
+# STEP 1 — Audit the Entire Authentication Flow
+
+Trace the complete login process from start to finish.
+
+Audit:
+
+* Login form
+* Validation
+* Authentication API
+* Password verification
+* Session creation
+* JWT generation (if applicable)
+* Cookie creation
+* Session persistence
+* Authorization middleware
+* Protected routes
+* React Context
+* Auth Provider
+* Zustand/Redux state (if used)
+* Local Storage
+* Session Storage
+* Token refresh
+* Route Guards
+* React Router
+* Admin Layout
+* Dashboard routing
+* Logout flow
+
+Identify exactly where the login process breaks.
+
+---
+
+# STEP 2 — Backend Authentication
+
+Verify:
+
+POST /login
+
+or
+
+/api/login
+
+or
+
+/api/auth/login
+
+Ensure it returns
+
+HTTP 200
+
+with
+
+Authenticated user
+
+Session
+
+Token
+
+Role
+
+Permissions
+
+Verify that no server exceptions occur.
+
+Check server logs.
+
+Fix all authentication errors.
+
+---
+
+# STEP 3 — Session Handling
+
+Verify:
+
+Session is created
+
+Session is stored
+
+Cookie is sent
+
+Cookie is secure
+
+Cookie persists after refresh
+
+Session survives page reload
+
+Fix:
+
+Missing cookies
+
+Incorrect SameSite
+
+Incorrect Secure flags
+
+Expired sessions
+
+Incorrect domain
+
+Incorrect path
+
+Cross-origin issues
+
+---
+
+# STEP 4 — JWT Validation
+
+If JWT authentication is used:
+
+Verify
+
+Token generation
+
+Token signing
+
+Token expiration
+
+Token validation
+
+Token storage
+
+Authorization headers
+
+Refresh tokens
+
+Repair any invalid token handling.
+
+---
+
+# STEP 5 — Frontend Login
+
+After successful authentication:
+
+Immediately redirect
+
+/admin
+
+or
+
+/dashboard
+
+or
+
+/admin/dashboard
+
+depending on the existing routing structure.
+
+Never leave the user on the login page after a successful login.
+
+---
+
+# STEP 6 — Protected Routes
+
+Ensure:
+
+Unauthenticated users
+
+→ Login page
+
+Authenticated Admin
+
+→ Admin Dashboard
+
+Authenticated non-admin
+
+→ Appropriate user dashboard or access denied
+
+Unauthorized users must never access admin pages.
+
+---
+
+# STEP 7 — Role-Based Access
+
+Implement proper role checking.
+
+Example:
+
+Admin
+
+Manager
+
+Staff
+
+Customer
+
+Only Admin should access
+
+Dashboard
+
+Products
+
+Orders
+
+Users
+
+Analytics
+
+Settings
+
+Everything else should remain protected.
+
+---
+
+# STEP 8 — Dashboard
+
+Verify the Admin Dashboard loads correctly.
+
+Ensure all navigation works:
+
+Dashboard
+
+Products
+
+Orders
+
+Categories
+
+Customers
+
+Analytics
+
+Coupons
+
+Settings
+
+Media
+
+Payments
+
+Logout
+
+No blank pages.
+
+No infinite loading.
+
+No routing loops.
+
+---
+
+# STEP 9 — Error Handling
+
+Display meaningful messages:
+
+Invalid password
+
+Invalid email
+
+Session expired
+
+Unauthorized
+
+Server unavailable
+
+Do not silently fail.
+
+Log detailed errors to the console in development.
+
+Provide user-friendly messages in production.
+
+---
+
+# STEP 10 — Browser Testing
+
+Test on:
+
+Chrome
+
+Firefox
+
+Edge
+
+Safari
+
+Mobile Chrome
+
+Mobile Safari
+
+Verify:
+
+Login
+
+Refresh
+
+Logout
+
+Re-login
+
+Session persistence
+
+---
+
+# STEP 11 — API Verification
+
+Test every authentication endpoint.
+
+Verify:
+
+200
+
+401
+
+403
+
+404
+
+500
+
+Responses are handled correctly.
+
+No uncaught promise rejections.
+
+---
+
+# STEP 12 — Security Review
+
+Protect against:
+
+Session fixation
+
+CSRF
+
+XSS
+
+Token theft
+
+Cookie hijacking
+
+Open redirects
+
+Never expose secrets.
+
+Never expose admin endpoints.
+
+---
+
+# STEP 13 — Environment Variables
+
+Verify every deployment environment contains the correct values.
+
+Examples:
+
+DATABASE_URL
+
+SESSION_SECRET
+
+JWT_SECRET
+
+VITE_API_BASE_URL
+
+NODE_ENV
+
+COOKIE_SECRET
+
+YOCO keys
+
+Payment secrets
+
+Ensure no missing or incorrect variables prevent authentication.
+
+---
+
+# STEP 14 — Build Verification
+
+Run:
+
+Type checking
+
+Linting
+
+Production build
+
+Unit tests (if available)
+
+Resolve:
+
+TypeScript errors
+
+Unused imports
+
+Broken routes
+
+Broken API references
+
+Build failures
+
+---
+
+# STEP 15 — Deployment
+
+Once authentication is fully functional:
+
+Deploy the exact same working version to:
+
+1. Replit deployment
+2. Git repository (commit with descriptive message)
+3. Vercel production deployment
+
+Confirm:
+
+Successful build
+
+No deployment errors
+
+Environment variables configured correctly
+
+No broken URLs
+
+No stale caches
+
+Production login verified
+
+---
+
+# FINAL ACCEPTANCE CRITERIA
+
+The task is complete only when all of the following are true:
+
+* Admin login succeeds.
+* User is immediately redirected to the Admin Dashboard.
+* Protected routes block unauthorized access.
+* Sessions persist after page refresh.
+* Logout works correctly.
+* Re-login works correctly.
+* No infinite redirects.
+* No blank pages.
+* No authentication errors in browser console.
+* No backend authentication exceptions.
+* Successful production build.
+* Successful deployment on Replit.
+* Successful deployment on Vercel.
+* Changes committed and pushed to Git.
+* All production URLs serve the updated authentication flow.
+
+Provide a concise report describing:
+
+1. The root cause(s) of the issue.
+2. Every file modified.
+3. Any environment variables required.
+4. The deployment status for Replit, Git, and Vercel.
+5. Manual verification steps confirming the fix.
