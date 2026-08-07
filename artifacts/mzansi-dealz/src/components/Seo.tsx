@@ -13,7 +13,7 @@ type SeoProps = {
 };
 
 export const SITE_NAME = "MzansiDealz";
-export const SITE_ORIGIN = "https://mzansidealz.com";
+export const SITE_ORIGIN = "https://www.mzansidealz.com";
 export const DEFAULT_IMAGE = `${SITE_ORIGIN}/opengraph.jpg`;
 
 function absoluteUrl(value: string) {

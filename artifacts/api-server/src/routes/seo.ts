@@ -3,7 +3,7 @@ import { db, productsTable, categoriesTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 
 const router = Router();
-const SITE_ORIGIN = "https://mzansidealz.com";
+const SITE_ORIGIN = "https://www.mzansidealz.com";
 
 function escapeXml(value: string) {
   return value.replace(/[<>&'"]/g, (character) => ({
