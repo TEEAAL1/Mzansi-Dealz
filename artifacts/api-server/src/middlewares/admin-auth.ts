@@ -6,8 +6,6 @@ export const ADMIN_SESSION_COOKIE = "mzansi_admin_session";
 export const ADMIN_CSRF_COOKIE = "mzansi_admin_csrf";
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
-const DEFAULT_ADMIN_PASSWORD_HASH =
-  "$2b$12$UyXx0O752ftqWMABkkybX.sJF5JPLPaFh4Q2QFjCyueMv5Gopjn.u";
 const revokedSessions = new Set<string>();
 
 function isProduction() {
@@ -18,23 +16,21 @@ function cookieSameSite(): "lax" | "none" {
   return isProduction() ? "none" : "lax";
 }
 
-function passwordHash() {
-  return process.env.ADMIN_PASSWORD_HASH ?? DEFAULT_ADMIN_PASSWORD_HASH;
-}
-
 let configuredPasswordHash: Promise<string> | undefined;
 
-function activePasswordHash() {
-  if (process.env.ADMIN_PASSWORD_HASH) {
-    return Promise.resolve(process.env.ADMIN_PASSWORD_HASH);
+function activePasswordHash(): Promise<string | null> {
+  const configuredHash = process.env.ADMIN_PASSWORD_HASH?.trim();
+  if (configuredHash) {
+    return Promise.resolve(configuredHash);
   }
 
-  if (process.env.ADMIN_PASSWORD) {
-    configuredPasswordHash ??= bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+  const configuredPassword = process.env.ADMIN_PASSWORD?.trim();
+  if (configuredPassword) {
+    configuredPasswordHash ??= bcrypt.hash(configuredPassword, 12);
     return configuredPasswordHash;
   }
 
-  return Promise.resolve(passwordHash());
+  return Promise.resolve(null);
 }
 
 function cleanupSessions() {
@@ -48,7 +44,8 @@ function sameSecret(left: string, right: string) {
 }
 
 export async function verifyAdminPassword(password: string) {
-  return bcrypt.compare(password, await activePasswordHash());
+  const hash = await activePasswordHash();
+  return Boolean(hash && (await bcrypt.compare(password, hash)));
 }
 
 export function createAdminSession(res: Response) {

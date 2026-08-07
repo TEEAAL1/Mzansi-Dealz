@@ -13,14 +13,6 @@ function notify() {
 
 function setSessionState(nextState: AdminSessionSnapshot) {
   sessionState = nextState;
-  if (typeof window !== "undefined") {
-    if (nextState === "authenticated") {
-      window.localStorage.setItem("mzansi_admin_authenticated", "true");
-    } else if (nextState === "unauthenticated") {
-      window.localStorage.removeItem("mzansi_admin_authenticated");
-      window.localStorage.removeItem("mzansi_admin_token");
-    }
-  }
   notify();
 }
 
@@ -69,6 +61,21 @@ export function useAdminToken() {
   useEffect(() => {
     if (sessionState === "checking") void checkAdminSession();
   }, []);
+
+  useEffect(() => {
+    if (snapshot !== "authenticated") return;
+
+    const revalidate = () => {
+      void checkAdminSession();
+    };
+    const interval = window.setInterval(revalidate, 60_000);
+    window.addEventListener("focus", revalidate);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", revalidate);
+    };
+  }, [snapshot]);
 
   const setToken = (newToken: string) => {
     setSessionState(newToken ? "authenticated" : "unauthenticated");
