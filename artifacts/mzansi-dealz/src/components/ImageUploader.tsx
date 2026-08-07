@@ -16,6 +16,12 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+  // Track URLs that were uploaded during this editing session (not yet persisted
+  // to a product record). Only these are safe to delete from disk immediately
+  // when the user removes them — existing product images must be cleaned up
+  // server-side on save to avoid breaking the storefront if the user cancels.
+  const uploadedInSession = useRef<Set<string>>(new Set());
+
   const refreshAdminCsrfToken = async () => {
     const response = await fetch(apiUrl("/api/admin/session"), { credentials: "include", cache: "no-store" });
     const session = await response.json().catch(() => ({})) as { authenticated?: boolean; csrfToken?: string };
@@ -42,6 +48,9 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Upload failed");
       const data = await response.json() as { urls?: string[]; url?: string };
       const urls = data.urls?.length ? data.urls : data.url ? [data.url] : [];
+      // Track these as session-uploaded so they can be eagerly cleaned up if
+      // the user removes them before saving.
+      urls.forEach((url) => uploadedInSession.current.add(url));
       onChange([...value, ...urls].slice(0, 12));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Upload failed");
@@ -54,6 +63,14 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
   const removeImage = async (url: string) => {
     setError(null);
     onChange(value.filter((item) => item !== url));
+
+    // Only eagerly delete from disk if uploaded in this session (safe: not yet
+    // saved to any product). Images that already belong to a saved product are
+    // removed server-side when the product update is saved, so we must not
+    // delete them now — the user might cancel and the storefront would break.
+    if (!uploadedInSession.current.has(url)) return;
+    uploadedInSession.current.delete(url);
+
     if (!url.includes("/uploads/")) return;
     try {
       const csrfToken = await refreshAdminCsrfToken();
@@ -65,7 +82,8 @@ export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
       });
       if (!response.ok) throw new Error("The image could not be deleted.");
     } catch (cause) {
-      onChange(value);
+      // File cleanup failed — it will be orphaned on disk. This is acceptable:
+      // the image is no longer referenced by any product.
       setError(cause instanceof Error ? cause.message : "The image could not be deleted.");
     }
   };
