@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Seo } from "@/components/Seo";
+import { Seo, SITE_ORIGIN } from "@/components/Seo";
 
 export default function Shop({ params }: { params?: { category?: string } }) {
   const searchStr = useSearch();
@@ -90,7 +90,7 @@ export default function Shop({ params }: { params?: { category?: string } }) {
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           name: activeCategory ? `${activeCategory.name} Deals` : "Shop All Deals",
-          url: `https://mzansidealz.com${categorySlug ? `/shop/${categorySlug}` : "/shop"}`,
+          url: `${SITE_ORIGIN}${categorySlug ? `/shop/${categorySlug}` : "/shop"}`,
         }}
         breadcrumbs={[
           { name: "Home", url: "/" },

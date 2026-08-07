@@ -10,7 +10,7 @@ import { ArrowLeft, BadgeCheck, ChevronLeft, ChevronRight, CreditCard, Heart, Li
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { Seo } from "@/components/Seo";
+import { Seo, SITE_ORIGIN } from "@/components/Seo";
 
 const WISHLIST_STORAGE_KEY = "mzansi_wishlist";
 const RECENTLY_VIEWED_STORAGE_KEY = "mzansi_recently_viewed";
@@ -205,7 +205,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             price: product.price,
             priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
             availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-            url: `https://mzansidealz.com${productPath(product)}`,
+            url: `${SITE_ORIGIN}${productPath(product)}`,
             seller: { "@type": "Organization", name: "MzansiDealz" },
           },
         }}

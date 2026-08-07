@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /cart
-Disallow: /checkout
-Disallow: /order-confirmation
-Sitemap: https://mzansidealz.com/sitemap.xml
