@@ -1,9 +1,11 @@
 import { Truck, Clock, MapPin, Package, AlertCircle, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
+import { Seo } from "@/components/Seo";
 
 export default function ShippingDelivery() {
   return (
     <div className="pb-16">
+      <Seo title="Shipping & Delivery South Africa | MzansiDealz" description="See MzansiDealz delivery rates, estimated delivery times and nationwide shipping information for South African online orders." breadcrumbs={[{ name: "Home", url: "/" }, { name: "Shipping & Delivery", url: "/shipping-delivery" }]} />
       <div className="bg-secondary text-white py-12 px-4">
         <div className="container mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-black italic tracking-tight mb-3">Shipping &amp; <span className="text-primary">Delivery</span></h1>

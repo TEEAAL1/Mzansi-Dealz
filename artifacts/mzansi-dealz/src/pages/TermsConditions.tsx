@@ -1,6 +1,9 @@
+import { Seo } from "@/components/Seo";
+
 export default function TermsConditions() {
   return (
     <div className="pb-16">
+      <Seo title="Terms & Conditions | MzansiDealz" description="Review the terms and conditions for shopping with MzansiDealz, including orders, payment, delivery and returns." noindex breadcrumbs={[{ name: "Home", url: "/" }, { name: "Terms & Conditions", url: "/terms-conditions" }]} />
       <div className="bg-secondary text-white py-12 px-4">
         <div className="container mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-black italic tracking-tight mb-3">Terms &amp; <span className="text-primary">Conditions</span></h1>

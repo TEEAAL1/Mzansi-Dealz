@@ -1,9 +1,11 @@
 import { Link } from "wouter";
 import { RotateCcw, CheckCircle, XCircle, Clock, Package, AlertTriangle } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function ReturnsRefunds() {
   return (
     <div className="pb-16">
+      <Seo title="Returns & Refunds | MzansiDealz South Africa" description="Understand the MzansiDealz returns, exchanges and refunds process for online orders delivered across South Africa." breadcrumbs={[{ name: "Home", url: "/" }, { name: "Returns & Refunds", url: "/returns-refunds" }]} />
       <div className="bg-secondary text-white py-12 px-4">
         <div className="container mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-black italic tracking-tight mb-3">Returns &amp; <span className="text-primary">Refunds</span></h1>

@@ -1,5 +1,7 @@
 import { useGetProduct, getGetProductQueryKey, getListProductsQueryKey, useListProducts } from "@workspace/api-client-react";
-import { formatZAR } from "@/lib/utils";
+import { apiUrl } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
+import { formatZAR, productPath } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
@@ -55,8 +57,20 @@ function parseGallery(galleryImages: string | null | undefined, primaryImage: st
 }
 
 export default function ProductDetail({ params }: { params: { id: string } }) {
-  const id = parseInt(params.id);
-  const { data: product, isLoading } = useGetProduct(id, { query: { enabled: !isNaN(id), queryKey: getGetProductQueryKey(id) } });
+  const numericId = Number(params.id);
+  const isNumericId = Number.isInteger(numericId) && numericId > 0;
+  const { data: numericProduct, isLoading: numericLoading } = useGetProduct(numericId, { query: { enabled: isNumericId, queryKey: getGetProductQueryKey(numericId) } });
+  const { data: slugProduct, isLoading: slugLoading } = useQuery({
+    queryKey: ["product-by-slug", params.id],
+    queryFn: async () => {
+      const response = await fetch(apiUrl(`/api/products/slug/${encodeURIComponent(params.id)}`));
+      if (!response.ok) throw new Error("Product not found");
+      return response.json() as Promise<NonNullable<typeof numericProduct>>;
+    },
+    enabled: !isNumericId,
+  });
+  const product = numericProduct ?? slugProduct;
+  const isLoading = numericLoading || slugLoading;
   const { data: relatedData } = useListProducts(
     { category: product?.categorySlug, limit: 5, sort: "best_selling" },
     { query: { enabled: Boolean(product?.categorySlug), queryKey: getListProductsQueryKey({ category: product?.categorySlug, limit: 5, sort: "best_selling" }) } },
@@ -66,7 +80,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState("");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(() => readStoredIds(WISHLIST_STORAGE_KEY).includes(id));
+  const [isWishlisted, setIsWishlisted] = useState(() => readStoredIds(WISHLIST_STORAGE_KEY).includes(numericId));
   const [recentlyViewed, setRecentlyViewed] = useState<RecentProduct[]>(readRecentProducts);
 
   const gallery = useMemo(() => parseGallery(product?.galleryImages, product?.imageUrl || ""), [product?.galleryImages, product?.imageUrl]);
@@ -124,8 +138,6 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
     }
   }, [isWishlisted, product]);
 
-  if (isNaN(id)) return <div className="container mx-auto p-8" data-testid="status-invalid-product">Invalid product ID</div>;
-
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8" data-testid="status-product-loading">
@@ -173,6 +185,12 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
         description={product.metaDescription || product.description || `Shop ${product.name} from MzansiDealz with secure checkout and nationwide delivery.`}
         type="product"
         image={product.imageUrl}
+        breadcrumbs={[
+          { name: "Home", url: "/" },
+          { name: "Shop", url: "/shop" },
+          { name: product.categoryName, url: `/shop/${product.categorySlug || product.categoryId}` },
+          { name: product.name, url: productPath(product) },
+        ]}
         structuredData={{
           "@context": "https://schema.org",
           "@type": "Product",
@@ -181,7 +199,15 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           description: product.description || undefined,
           sku: product.sku || undefined,
           brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
-          offers: { "@type": "Offer", priceCurrency: "ZAR", price: product.price, availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock", url: `https://mzansidealz.com/product/${product.id}` },
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "ZAR",
+            price: product.price,
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+            availability: product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            url: `https://mzansidealz.com${productPath(product)}`,
+            seller: { "@type": "Organization", name: "MzansiDealz" },
+          },
         }}
       />
       <Link href="/shop" data-testid="link-back-to-shop" className="mb-5 inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground transition-colors hover:text-primary">
@@ -204,7 +230,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1" aria-label="Product gallery" data-testid="gallery-product-thumbnails">
             {gallery.map((image, index) => (
               <button type="button" key={`${image}-${index}`} data-testid={`button-gallery-thumbnail-${index}`} aria-label={`View ${product.name} image ${index + 1}`} aria-pressed={selectedImage === image} onClick={() => setSelectedImage(image)} className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selectedImage === image ? "border-primary" : "border-border hover:border-primary/60"}`}>
-                 <img src={image} alt="" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
+                 <img src={image} alt={`${product.name} product image ${index + 1}`} loading="lazy" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
               </button>
             ))}
           </div>
@@ -283,7 +309,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
           <div className="flex gap-4 overflow-x-auto pb-2">
             {recentlyViewed.filter((item) => item.id !== product.id).map((item) => (
               <Link href={`/product/${item.id}`} key={item.id} data-testid={`link-recent-product-${item.id}`} className="flex min-w-[15rem] max-w-[17rem] items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/50">
-                 <img src={item.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-lg object-cover" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
+                 <img src={item.imageUrl} alt={`${item.name} product thumbnail`} className="h-16 w-16 shrink-0 rounded-lg object-cover" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
                 <span className="min-w-0"><span className="line-clamp-2 text-sm font-bold">{item.name}</span><span className="mt-1 block text-sm font-black text-primary">{formatZAR(item.price)}</span></span>
               </Link>
             ))}

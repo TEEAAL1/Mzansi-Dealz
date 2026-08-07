@@ -92,6 +92,11 @@ export default function Shop({ params }: { params?: { category?: string } }) {
           name: activeCategory ? `${activeCategory.name} Deals` : "Shop All Deals",
           url: `https://mzansidealz.com${categorySlug ? `/shop/${categorySlug}` : "/shop"}`,
         }}
+        breadcrumbs={[
+          { name: "Home", url: "/" },
+          { name: "Shop", url: "/shop" },
+          ...(activeCategory ? [{ name: activeCategory.name, url: `/shop/${activeCategory.slug}` }] : []),
+        ]}
       />
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-black italic tracking-tight mb-2">

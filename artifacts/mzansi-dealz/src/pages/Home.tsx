@@ -66,11 +66,12 @@ export default function Home() {
         title="MzansiDealz | South Africa's Best Deals Online"
         description="Shop trusted electronics, home essentials, beauty, fashion and wellness deals with secure checkout and nationwide delivery."
         structuredData={{
-          "@context": "https://schema.org",
-          "@type": "WebSite",
-          name: "MzansiDealz",
-          url: "https://mzansidealz.com",
-          potentialAction: { "@type": "SearchAction", target: "https://mzansidealz.com/shop?search={search_term_string}", "query-input": "required name=search_term_string" },
+          "@type": "FAQPage",
+          mainEntity: [
+            { "@type": "Question", name: "Do you deliver across South Africa?", acceptedAnswer: { "@type": "Answer", text: "Yes. MzansiDealz delivers nationwide across South Africa." } },
+            { "@type": "Question", name: "How much does delivery cost?", acceptedAnswer: { "@type": "Answer", text: "Delivery is free for orders over R400. Gauteng delivery is R69 and nationwide delivery is R99." } },
+            { "@type": "Question", name: "Are payments secure?", acceptedAnswer: { "@type": "Answer", text: "Payments are completed through secure hosted payment gateways." } },
+          ],
         }}
       />
       {/* Hero Section */}

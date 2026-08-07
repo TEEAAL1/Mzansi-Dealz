@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/api/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/api/robots.txt" },
     { "source": "/api/:path*", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/api/:path*" },
     { "source": "/uploads/:path*", "destination": "https://mzansi-dealz--mrmoyothabani.replit.app/uploads/:path*" },
     { "source": "/admin/:path*", "destination": "/index.html" },

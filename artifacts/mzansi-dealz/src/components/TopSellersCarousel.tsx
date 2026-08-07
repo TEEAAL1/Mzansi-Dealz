@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { getGetTopSellersQueryKey, useGetTopSellers } from "@workspace/api-client-react";
-import { ChevronLeft, ChevronRight, PackageCheck, ShoppingCart } from "lucide-react";
+import { PackageCheck, ShoppingCart } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatZAR } from "@/lib/utils";
+import { formatZAR, productPath } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 function formatUpdatedAt(value: string) {
@@ -25,8 +25,11 @@ export function TopSellersCarousel() {
   const { data, isLoading, isError, refetch } = useGetTopSellers({
     query: { queryKey: getGetTopSellersQueryKey(), staleTime: 60_000 },
   });
+  const products = data?.products ?? [];
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     if (!api) return;
@@ -40,7 +43,20 @@ export function TopSellersCarousel() {
     };
   }, [api]);
 
-  const products = data?.products ?? [];
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!api || products.length < 2 || isPaused || reducedMotion) return;
+    const timer = window.setInterval(() => api.scrollNext(), 4500);
+    return () => window.clearInterval(timer);
+  }, [api, isPaused, reducedMotion, products.length]);
+
   const currentProduct = products[selectedIndex] ?? products[0];
   const modeLabel = data?.mode === "curated" ? "Hand-picked by MzansiDealz" : "Ranked by completed orders";
   const positionLabel = currentProduct ? `${selectedIndex + 1} of ${products.length}` : "";
@@ -80,7 +96,13 @@ export function TopSellersCarousel() {
   }
 
   return (
-    <div className="relative rounded-3xl border border-border bg-card p-4 text-card-foreground shadow-2xl sm:p-5">
+    <div
+      className="relative rounded-3xl border border-border bg-card p-4 text-card-foreground shadow-2xl sm:p-5"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={() => setIsPaused(false)}
+    >
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">Top sellers</p>
@@ -91,7 +113,7 @@ export function TopSellersCarousel() {
 
       <Carousel
         setApi={setApi}
-        opts={{ align: "start", containScroll: "trimSnaps" }}
+        opts={{ align: "start", containScroll: "trimSnaps", loop: products.length > 1 }}
         aria-label="Top selling products"
         className="group/carousel"
       >
@@ -99,7 +121,7 @@ export function TopSellersCarousel() {
           {products.map((product) => (
             <CarouselItem key={product.id} className="basis-full pl-3">
               <article className="overflow-hidden rounded-2xl border border-border bg-background">
-                <Link href={`/product/${product.id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
+                <Link href={productPath(product)} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
                   <div className="relative aspect-square overflow-hidden bg-muted">
                     <img
                       src={product.imageUrl}
@@ -139,11 +161,11 @@ export function TopSellersCarousel() {
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className="text-[11px] font-medium text-muted-foreground">{data ? formatUpdatedAt(data.updatedAt) : "Prices checked recently"}</span>
         <Button asChild size="sm" className="font-bold">
-          <Link href={`/product/${currentProduct.id}`}><ShoppingCart className="mr-1.5 h-4 w-4" />View deal</Link>
+          <Link href={productPath(currentProduct)}><ShoppingCart className="mr-1.5 h-4 w-4" />View deal</Link>
         </Button>
       </div>
-      <div className="mt-3 flex justify-center gap-1.5 md:hidden" aria-label="Top seller slides">
-        {products.slice(0, 10).map((product, index) => (
+      <div className="mt-3 flex justify-center gap-1.5" aria-label="Top seller slides">
+        {products.map((product, index) => (
           <button
             key={product.id}
             type="button"

@@ -58,6 +58,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
     originalPrice: "",
     categoryId: "",
     imageUrl: "",
+    galleryImages: [] as string[],
     inStock: true,
     stockCount: "",
     isFeatured: false,
@@ -86,6 +87,14 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
           : "",
         categoryId: productData.categoryId?.toString() || "",
         imageUrl: productData.imageUrl,
+        galleryImages: (() => {
+          try {
+            const parsed = productData.galleryImages ? JSON.parse(productData.galleryImages) : [];
+            return Array.from(new Set([productData.imageUrl, ...(Array.isArray(parsed) ? parsed : [])].filter((image): image is string => typeof image === "string" && image.length > 0)));
+          } catch {
+            return [productData.imageUrl];
+          }
+        })(),
         inStock: productData.inStock,
         stockCount: productData.stockCount?.toString() || "",
         isFeatured: productData.isFeatured || false,
@@ -154,6 +163,7 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
         originalPrice: effectiveOriginalPrice,
         categoryId: Number(formData.categoryId),
         imageUrl: formData.imageUrl,
+        galleryImages: formData.galleryImages,
         inStock: formData.inStock,
         stockCount: formData.stockCount ? Number(formData.stockCount) : undefined,
         isFeatured: formData.isFeatured,
@@ -295,8 +305,8 @@ export default function AdminProductForm({ params }: { params?: { id?: string } 
             </CardHeader>
             <CardContent className="space-y-4">
               <ImageUploader
-                value={formData.imageUrl}
-                onChange={(url) => setFormData({ ...formData, imageUrl: url })}
+                value={formData.galleryImages.length ? formData.galleryImages : formData.imageUrl ? [formData.imageUrl] : []}
+                onChange={(galleryImages) => setFormData({ ...formData, galleryImages, imageUrl: galleryImages[0] ?? "" })}
               />
             </CardContent>
           </Card>

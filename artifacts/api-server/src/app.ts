@@ -107,7 +107,19 @@ app.get("/uploads/products/*path", async (req: Request, res: Response, next: Nex
       }
     });
     if (response.body) {
-      Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(res);
+      const stream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+      stream.on("error", (error) => {
+        logger.warn({ err: error, filePath }, "Public product image stream interrupted");
+        if (!res.headersSent) {
+          next(error);
+        } else if (!res.destroyed) {
+          res.destroy();
+        }
+      });
+      res.on("close", () => {
+        if (!res.writableFinished && !stream.destroyed) stream.destroy();
+      });
+      stream.pipe(res);
     } else {
       res.end();
     }

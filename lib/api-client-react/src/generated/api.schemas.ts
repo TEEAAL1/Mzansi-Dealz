@@ -281,6 +281,7 @@ export interface CreateProductRequest {
   originalPrice: number;
   categoryId: number;
   imageUrl: string;
+  galleryImages?: string[];
   inStock?: boolean;
   stockCount?: number;
   isFeatured?: boolean;

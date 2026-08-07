@@ -1,9 +1,11 @@
 import { Truck, ShieldCheck, CreditCard, Mail, Heart, Star, BadgePercent, Users } from "lucide-react";
 import { Link } from "wouter";
+import { Seo } from "@/components/Seo";
 
 export default function About() {
   return (
     <div className="pb-16">
+      <Seo title="About MzansiDealz | South African Online Deals" description="Learn about MzansiDealz, a South African online deals store offering trusted products, clear pricing and nationwide delivery." breadcrumbs={[{ name: "Home", url: "/" }, { name: "About", url: "/about" }]} />
       {/* Hero */}
       <div className="bg-secondary text-white py-14 px-4">
         <div className="container mx-auto max-w-3xl text-center">

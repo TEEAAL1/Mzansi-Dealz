@@ -1,151 +1,128 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, ImageIcon, X } from "lucide-react";
+import { Loader2, Star, Trash2, Upload, GripVertical } from "lucide-react";
 import { apiUrl, setCsrfToken } from "@workspace/api-client-react";
 
 interface ImageUploaderProps {
-  value: string;
-  onChange: (url: string) => void;
+  value: string[];
+  onChange: (urls: string[]) => void;
 }
 
 export default function ImageUploader({ value, onChange }: ImageUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const refreshAdminCsrfToken = async () => {
-    const sessionResponse = await fetch(apiUrl("/api/admin/session"), {
-      credentials: "include",
-      cache: "no-store",
-    });
-    const session = (await sessionResponse.json().catch(() => ({}))) as {
-      authenticated?: boolean;
-      csrfToken?: string;
-    };
-
-    if (!sessionResponse.ok || !session.authenticated || !session.csrfToken) {
-      throw new Error("Your admin session has expired. Please sign in again.");
-    }
-
+    const response = await fetch(apiUrl("/api/admin/session"), { credentials: "include", cache: "no-store" });
+    const session = await response.json().catch(() => ({})) as { authenticated?: boolean; csrfToken?: string };
+    if (!response.ok || !session.authenticated || !session.csrfToken) throw new Error("Your admin session has expired. Please sign in again.");
     setCsrfToken(session.csrfToken);
     return session.csrfToken;
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFiles = async (files: File[]) => {
+    if (!files.length) return;
     setIsUploading(true);
     setError(null);
-
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const upload = (csrfToken: string) =>
-        fetch(apiUrl("/api/uploads"), {
-          method: "POST",
-          credentials: "include",
-          headers: { "x-csrf-token": csrfToken },
-          body: formData,
-        });
-
-      // Read the token from the API session first. This avoids using a stale
-      // browser-side token when the frontend and API are on different hosts.
-      let res = await upload(await refreshAdminCsrfToken());
-
-      // A session can rotate between the session check and upload. Refresh
-      // once and retry rather than making the admin re-enter their password.
-      if (res.status === 403) {
-        res = await upload(await refreshAdminCsrfToken());
-      }
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Upload failed");
-      }
-
-      const data = await res.json();
-      onChange(data.url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      const body = new FormData();
+      files.slice(0, Math.max(0, 12 - value.length)).forEach((file) => body.append("images", file));
+      const upload = (csrfToken: string) => fetch(apiUrl("/api/uploads"), {
+        method: "POST",
+        credentials: "include",
+        headers: { "x-csrf-token": csrfToken },
+        body,
+      });
+      let response = await upload(await refreshAdminCsrfToken());
+      if (response.status === 403) response = await upload(await refreshAdminCsrfToken());
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || "Upload failed");
+      const data = await response.json() as { urls?: string[]; url?: string };
+      const urls = data.urls?.length ? data.urls : data.url ? [data.url] : [];
+      onChange([...value, ...urls].slice(0, 12));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Upload failed");
     } finally {
       setIsUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  const handleClear = () => {
-    onChange("");
+  const removeImage = async (url: string) => {
     setError(null);
+    onChange(value.filter((item) => item !== url));
+    if (!url.includes("/uploads/")) return;
+    try {
+      const csrfToken = await refreshAdminCsrfToken();
+      const response = await fetch(apiUrl("/api/uploads"), {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "content-type": "application/json", "x-csrf-token": csrfToken },
+        body: JSON.stringify({ url }),
+      });
+      if (!response.ok) throw new Error("The image could not be deleted.");
+    } catch (cause) {
+      onChange(value);
+      setError(cause instanceof Error ? cause.message : "The image could not be deleted.");
+    }
+  };
+
+  const reorder = (from: number, to: number) => {
+    if (from === to) return;
+    const next = [...value];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    onChange(next);
   };
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        <Label htmlFor="imageUrl">Product Image URL *</Label>
-        <div className="flex gap-2">
-          <Input
-            id="imageUrl"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="https://example.com/image.jpg"
-            required
-            className="flex-1"
-          />
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileRef.current?.click()}
-            disabled={isUploading}
-            className="gap-2"
-          >
-            {isUploading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4" />
-            )}
-            Upload
-          </Button>
-          {value && (
-            <Button type="button" variant="outline" size="icon" onClick={handleClear} className="shrink-0">
-              <X className="w-4 h-4" />
-            </Button>
-          )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <Label>Product images *</Label>
+          <p className="mt-1 text-xs text-muted-foreground">The first image is featured. Drag to reorder.</p>
         </div>
-        <p className="text-xs text-gray-400">
-          Paste a URL or upload an image file (max 5MB, JPG/PNG/WebP)
-        </p>
+        <div className="flex gap-2">
+          <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={(event) => void uploadFiles(Array.from(event.target.files ?? []))} className="hidden" />
+          <Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={isUploading || value.length >= 12} className="gap-2">
+            {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Upload images
+          </Button>
+        </div>
       </div>
 
-      {error && (
-        <p className="text-sm text-red-600">{error}</p>
-      )}
+      <div className="space-y-2">
+        <Label htmlFor="imageUrl">Featured image URL</Label>
+        <Input id="imageUrl" value={value[0] ?? ""} onChange={(event) => onChange([event.target.value, ...value.slice(1)].filter(Boolean))} placeholder="https://example.com/image.jpg" required />
+      </div>
 
-      {value && (
-        <div className="border rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center h-48 w-full max-w-xs">
-          <img
-            src={value}
-            alt="Preview"
-            className="max-h-full object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-            onLoad={(e) => {
-              (e.target as HTMLImageElement).style.display = "block";
-            }}
-          />
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {value.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {value.map((url, index) => (
+            <div
+              key={`${url}-${index}`}
+              draggable
+              onDragStart={() => setDraggedIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => { if (draggedIndex !== null) reorder(draggedIndex, index); setDraggedIndex(null); }}
+              className="group relative overflow-hidden rounded-xl border border-border bg-muted"
+            >
+              <img src={url} alt={`Product image ${index + 1}`} className="aspect-square w-full object-cover" onError={(event) => { event.currentTarget.src = "/product-placeholder.svg"; }} />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-foreground/75 p-2 text-primary-foreground">
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase"><GripVertical className="h-3 w-3" /> {index === 0 ? "Featured" : `Image ${index + 1}`}</span>
+                <div className="flex gap-1">
+                  {index > 0 && <button type="button" aria-label="Set as featured image" onClick={() => reorder(index, 0)} className="rounded p-1 hover:bg-primary"><Star className="h-3.5 w-3.5" /></button>}
+                  <button type="button" aria-label={`Delete image ${index + 1}`} onClick={() => void removeImage(url)} className="rounded p-1 hover:bg-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
+      <p className="text-xs text-muted-foreground">Up to 12 images, max 5MB each. JPG, PNG or WebP.</p>
     </div>
   );
 }

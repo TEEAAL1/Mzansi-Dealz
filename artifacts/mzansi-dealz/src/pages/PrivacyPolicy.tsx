@@ -1,6 +1,9 @@
+import { Seo } from "@/components/Seo";
+
 export default function PrivacyPolicy() {
   return (
     <div className="pb-16">
+      <Seo title="Privacy Policy | MzansiDealz South Africa" description="Read the MzansiDealz privacy policy and learn how customer information is handled in line with South African POPIA requirements." noindex breadcrumbs={[{ name: "Home", url: "/" }, { name: "Privacy Policy", url: "/privacy-policy" }]} />
       <div className="bg-secondary text-white py-12 px-4">
         <div className="container mx-auto max-w-3xl text-center">
           <h1 className="text-4xl font-black italic tracking-tight mb-3">Privacy <span className="text-primary">Policy</span></h1>

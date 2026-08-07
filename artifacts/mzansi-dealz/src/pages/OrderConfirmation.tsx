@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { CheckCircle2, Clock, XCircle, ShoppingBag, MapPin, Package, RefreshCw, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
+import { Seo } from "@/components/Seo";
 
 export default function OrderConfirmation({ params }: { params: { orderNumber: string } }) {
   const [retrying, setRetrying] = useState(false);
@@ -31,6 +32,7 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-16 max-w-3xl">
+        <Seo title="Order Confirmation | MzansiDealz" description="Your MzansiDealz order confirmation." noindex />
         <Skeleton className="w-24 h-24 rounded-full mx-auto mb-8" />
         <Skeleton className="h-10 w-3/4 mx-auto mb-4" />
         <Skeleton className="h-6 w-1/2 mx-auto mb-12" />
@@ -42,6 +44,7 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
   if (error || !order) {
     return (
       <div className="container mx-auto px-4 py-24 flex flex-col items-center justify-center text-center">
+        <Seo title="Order Not Found | MzansiDealz" description="The requested MzansiDealz order could not be found." noindex />
         <div className="bg-destructive/10 text-destructive w-24 h-24 rounded-full flex items-center justify-center mb-6">
           <XCircle className="w-12 h-12" />
         </div>
@@ -93,6 +96,7 @@ export default function OrderConfirmation({ params }: { params: { orderNumber: s
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <Seo title={`Order ${params.orderNumber} | MzansiDealz`} description="Your MzansiDealz order confirmation and delivery details." noindex />
       <div className="text-center mb-12">
         <div className={`mx-auto w-24 h-24 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 ${
           isPaid ? "bg-green-100 text-green-600 border-green-200" : 

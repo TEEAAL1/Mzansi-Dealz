@@ -48,7 +48,18 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     brand: normalizeCatalogueBrand(p.brand),
     specifications: sanitizeCatalogueText(p.specifications),
     features: sanitizeCatalogueText(p.features),
-    galleryImages: p.galleryImages,
+    galleryImages: p.galleryImages
+      ? JSON.stringify(
+        (() => {
+          try {
+            const parsed = JSON.parse(p.galleryImages);
+            return Array.isArray(parsed) ? parsed.map((image) => normalizeImageUrl(image)) : parsed;
+          } catch {
+            return p.galleryImages;
+          }
+        })(),
+      )
+      : null,
     stockStatus: p.stockStatus,
     weight: p.weight,
     dimensions: p.dimensions,
@@ -133,6 +144,22 @@ router.get("/products/stats", async (req, res) => {
     featuredCount: featuredCount?.count ?? 0,
     newArrivalsCount: newArrivalsCount?.count ?? 0,
   });
+});
+
+router.get("/products/slug/:slug", async (req, res) => {
+  const rows = await db
+    .select({ product: productsTable, category: categoriesTable })
+    .from(productsTable)
+    .leftJoin(categoriesTable, eq(productsTable.categoryId, categoriesTable.id))
+    .where(eq(productsTable.slug, req.params.slug))
+    .limit(1);
+
+  if (!rows.length) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+
+  res.json(toProductResponse(rows[0].product, rows[0].category?.name ?? ""));
 });
 
 router.get("/products/:id", async (req, res) => {

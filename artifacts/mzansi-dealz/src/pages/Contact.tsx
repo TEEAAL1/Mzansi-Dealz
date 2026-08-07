@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Mail, MessageCircle, Clock, MapPin, Send, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Seo } from "@/components/Seo";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
@@ -21,6 +22,7 @@ export default function Contact() {
 
   return (
     <div className="pb-16">
+      <Seo title="Contact MzansiDealz | Customer Support South Africa" description="Contact MzansiDealz for help with orders, delivery, products and returns. Our South African support team is ready to help." breadcrumbs={[{ name: "Home", url: "/" }, { name: "Contact", url: "/contact" }]} />
       {/* Hero */}
       <div className="bg-secondary text-white py-12 px-4">
         <div className="container mx-auto max-w-3xl text-center">

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, CreditCard, Landmark, Lock, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Seo } from "@/components/Seo";
 
 const PROVINCES = [
   "Gauteng",
@@ -137,6 +138,7 @@ export default function Checkout() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Seo title="Secure Checkout | MzansiDealz" description="Complete your MzansiDealz order with secure hosted payment." noindex />
       <h1 className="text-3xl md:text-4xl font-black italic tracking-tight mb-8">Secure Checkout</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-8">

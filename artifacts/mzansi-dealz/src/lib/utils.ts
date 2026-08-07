@@ -10,3 +10,7 @@ export function formatZAR(amount: number): string {
 }
 
 export const formatPrice = formatZAR;
+
+export function productPath(product: { id: number; slug?: string | null }) {
+  return `/product/${product.slug || product.id}`;
+}

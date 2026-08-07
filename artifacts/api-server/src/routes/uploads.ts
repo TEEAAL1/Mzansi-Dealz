@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { readFile, unlink } from "node:fs/promises";
 import { logger } from "../lib/logger";
 import { requireAdmin } from "../middlewares/admin-auth";
+import { removeUploadedFileIfOwned } from "../services/upload-files";
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -32,49 +33,54 @@ const upload = multer({
 const router = Router();
 
 router.post("/uploads", requireAdmin, (req, res) => {
-  upload.single("image")(req, res, async (err) => {
+  upload.array("images", 12)(req, res, async (err) => {
     if (err) {
       res.status(400).json({ error: err.message || "Upload failed" });
       return;
     }
 
-    if (!req.file) {
+    const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+    if (!files.length && req.file) files.push(req.file);
+    if (!files.length) {
       res.status(400).json({ error: "No image file provided" });
       return;
     }
 
-    const fileBytes = await readFile(req.file.path);
-    const isPng =
-      fileBytes.length >= 8 &&
-      fileBytes.subarray(0, 8).equals(
+    const urls: string[] = [];
+    for (const file of files) {
+      const fileBytes = await readFile(file.path);
+      const isPng = fileBytes.length >= 8 && fileBytes.subarray(0, 8).equals(
         Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
       );
-    const isJpeg =
-      fileBytes.length >= 3 &&
-      fileBytes[0] === 0xff &&
-      fileBytes[1] === 0xd8 &&
-      fileBytes[2] === 0xff;
-    const isWebp =
-      fileBytes.length >= 12 &&
-      fileBytes.subarray(0, 4).toString("ascii") === "RIFF" &&
-      fileBytes.subarray(8, 12).toString("ascii") === "WEBP";
+      const isJpeg = fileBytes.length >= 3 && fileBytes[0] === 0xff && fileBytes[1] === 0xd8 && fileBytes[2] === 0xff;
+      const isWebp = fileBytes.length >= 12 && fileBytes.subarray(0, 4).toString("ascii") === "RIFF" && fileBytes.subarray(8, 12).toString("ascii") === "WEBP";
+      if (!isPng && !isJpeg && !isWebp) {
+        await Promise.all(files.map((candidate) => unlink(candidate.path).catch(() => undefined)));
+        res.status(400).json({ error: "The uploaded file is not a valid PNG, JPG, or WebP image." });
+        return;
+      }
 
-    if (!isPng && !isJpeg && !isWebp) {
-      await unlink(req.file.path).catch(() => undefined);
-      res.status(400).json({ error: "The uploaded file is not a valid PNG, JPG, or WebP image." });
-      return;
+      const baseUrl = process.env.REPLIT_DEPLOYMENT_URL
+        ? `https://${process.env.REPLIT_DEPLOYMENT_URL}`
+        : `http://localhost:${process.env.PORT ?? 5000}`;
+
+      urls.push(`${baseUrl}/uploads/${file.filename}`);
     }
 
-    const baseUrl = process.env.REPLIT_DEPLOYMENT_URL
-      ? `https://${process.env.REPLIT_DEPLOYMENT_URL}`
-      : `http://localhost:${process.env.PORT ?? 5000}`;
+    logger.info({ count: urls.length }, "Product images uploaded");
 
-    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
-
-    logger.info({ filename: req.file.filename, originalname: req.file.originalname }, "Image uploaded");
-
-    res.json({ url: fileUrl });
+    res.json({ urls, url: urls[0] });
   });
+});
+
+router.delete("/uploads", requireAdmin, async (req, res) => {
+  const url = typeof req.body?.url === "string" ? req.body.url : "";
+  if (!url) {
+    res.status(400).json({ error: "An image URL is required." });
+    return;
+  }
+  await removeUploadedFileIfOwned(url);
+  res.status(204).send();
 });
 
 export default router;

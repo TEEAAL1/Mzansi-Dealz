@@ -35,6 +35,7 @@ import {
   type TopSellerLimit,
   type TopSellerMode,
 } from "../services/topSellerService";
+import { removeUploadedFileIfOwned, parseGalleryImages } from "../services/upload-files";
 
 const router = Router();
 
@@ -391,6 +392,7 @@ const CreateProductSchema = z.object({
   originalPrice: z.number().positive(),
   categoryId: z.number().int().positive(),
   imageUrl: z.string().url(),
+  galleryImages: z.array(z.string().url()).max(12).optional(),
   inStock: z.boolean().optional().default(true),
   stockCount: z.number().int().optional(),
   isFeatured: z.boolean().optional().default(false),
@@ -456,6 +458,10 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
   };
 }
 
+function normalizeGallery(primary: string, galleryImages?: string[]) {
+  return Array.from(new Set([primary, ...(galleryImages ?? [])].filter(Boolean)));
+}
+
 // POST /admin/products
 router.post("/admin/products", requireAdmin, async (req, res) => {
   try {
@@ -482,6 +488,7 @@ router.post("/admin/products", requireAdmin, async (req, res) => {
         discountPercent,
         categoryId: data.categoryId,
         imageUrl: data.imageUrl,
+        galleryImages: JSON.stringify(normalizeGallery(data.imageUrl, data.galleryImages)),
         inStock: data.inStock ?? true,
         stockCount: data.stockCount ?? null,
         isFeatured: data.isFeatured ?? false,
@@ -529,6 +536,8 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
     }
 
     const slug = await uniqueSlug(slugify(data.name), id);
+    const nextGallery = normalizeGallery(data.imageUrl, data.galleryImages ?? parseGalleryImages(existing[0].galleryImages));
+    const previousGallery = parseGalleryImages(existing[0].galleryImages);
 
     if (existing[0].categoryId !== data.categoryId) {
       await db
@@ -552,6 +561,7 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
         discountPercent,
         categoryId: data.categoryId,
         imageUrl: data.imageUrl,
+        galleryImages: JSON.stringify(nextGallery),
         inStock: data.inStock ?? true,
         stockCount: data.stockCount ?? null,
         isFeatured: data.isFeatured ?? false,
@@ -561,6 +571,12 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
       })
       .where(eq(productsTable.id, id))
       .returning();
+
+    await Promise.all(
+      previousGallery
+        .filter((image) => !nextGallery.includes(image))
+        .map((image) => removeUploadedFileIfOwned(image)),
+    );
 
     const cats = await db.select().from(categoriesTable).where(eq(categoriesTable.id, data.categoryId)).limit(1);
     res.json(toProductResponse(updated, cats[0]?.name ?? ""));
@@ -583,6 +599,9 @@ router.delete("/admin/products/:id", requireAdmin, async (req, res) => {
   }
 
   await db.delete(productsTable).where(eq(productsTable.id, id));
+  await Promise.all(
+    parseGalleryImages(existing[0].galleryImages).map((image) => removeUploadedFileIfOwned(image)),
+  );
   await db
     .update(categoriesTable)
     .set({ productCount: sql`GREATEST(0, ${categoriesTable.productCount} - 1)` })

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { formatZAR } from "@/lib/utils";
+import { formatZAR, productPath } from "@/lib/utils";
 import type { Product } from "@workspace/api-client-react";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
@@ -109,7 +109,7 @@ export function ProductCard({ product }: { product: Product }) {
           <Heart className={`h-5 w-5 ${isWishlisted ? "fill-destructive text-destructive" : ""}`} />
         </button>
 
-        <Link href={`/product/${product.id}`} className="block shrink-0" data-testid={`link-product-image-${product.id}`}>
+        <Link href={productPath(product)} className="block shrink-0" data-testid={`link-product-image-${product.id}`}>
           <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
             <img
               src={product.imageUrl}
@@ -131,7 +131,7 @@ export function ProductCard({ product }: { product: Product }) {
         </Link>
 
         <div className="flex flex-1 flex-col p-4">
-          <Link href={`/product/${product.id}`} data-testid={`link-product-name-${product.id}`} className="mb-3 block min-h-[3.25rem]">
+          <Link href={productPath(product)} data-testid={`link-product-name-${product.id}`} className="mb-3 block min-h-[3.25rem]">
             <h3 className="line-clamp-2 text-sm font-semibold leading-6 transition-colors group-hover:text-primary">
               {product.name}
             </h3>
@@ -210,7 +210,7 @@ export function ProductCard({ product }: { product: Product }) {
               <X className="h-5 w-5" />
             </button>
             <div className="aspect-square bg-muted md:aspect-auto">
-               <img src={product.imageUrl} alt="" className="h-full w-full object-cover" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
+               <img src={product.imageUrl} alt={`${product.name} product preview`} className="h-full w-full object-cover" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = "/opengraph.jpg"; }} />
             </div>
             <div className="flex flex-col p-6">
               <span className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-primary">{product.categoryName}</span>
@@ -232,7 +232,7 @@ export function ProductCard({ product }: { product: Product }) {
                   <ShoppingCart className="mr-2 h-4 w-4" /> {product.inStock ? "Add to cart" : "Sold out"}
                 </Button>
                 <Button type="button" data-testid={`button-view-full-product-${product.id}`} variant="outline" asChild className="h-12 w-full font-bold">
-                  <Link href={`/product/${product.id}`} onClick={() => setIsQuickViewOpen(false)}>View full deal</Link>
+                  <Link href={productPath(product)} onClick={() => setIsQuickViewOpen(false)}>View full deal</Link>
                 </Button>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { formatZAR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Trash2, Minus, Plus, ShoppingBag, ShieldCheck, CreditCard } from "lucide-react";
+import { Seo } from "@/components/Seo";
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, subtotal, totalItems } = useCart();
@@ -13,6 +14,7 @@ export default function Cart() {
   if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-24 flex flex-col items-center justify-center text-center">
+        <Seo title="Your Cart | MzansiDealz" description="Review your MzansiDealz shopping cart." noindex />
         <div className="bg-muted w-24 h-24 rounded-full flex items-center justify-center mb-6">
           <ShoppingBag className="w-10 h-10 text-muted-foreground" />
         </div>
@@ -29,6 +31,7 @@ export default function Cart() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <Seo title="Your Cart | MzansiDealz" description="Review your MzansiDealz shopping cart before secure checkout." noindex />
       <h1 className="text-3xl md:text-4xl font-black italic tracking-tight mb-8">
         Your Cart <span className="text-xl text-muted-foreground font-medium not-italic ml-2">({totalItems} items)</span>
       </h1>
