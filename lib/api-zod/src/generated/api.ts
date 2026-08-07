@@ -335,6 +335,14 @@ export const UpdateOrderStatusBody = zod.object({
 
 
 /**
+ * @summary Delete a safe-to-remove order
+ */
+export const DeleteOrderParams = zod.object({
+  "orderNumber": zod.coerce.string()
+})
+
+
+/**
  * @summary Get payment gateway settings and configuration status
  */
 export const GetAdminPaymentSettingsResponse = zod.object({

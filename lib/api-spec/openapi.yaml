@@ -277,6 +277,27 @@ paths:
         "401":
           description: Unauthorized
 
+  /admin/orders/{orderNumber}:
+    delete:
+      operationId: deleteOrder
+      tags: [admin]
+      summary: Delete a safe-to-remove order
+      parameters:
+        - name: orderNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Unauthorized
+        "404":
+          description: Not found
+        "409":
+          description: Order is not safe to delete
+
   /admin/payment-settings:
     get:
       operationId: getAdminPaymentSettings

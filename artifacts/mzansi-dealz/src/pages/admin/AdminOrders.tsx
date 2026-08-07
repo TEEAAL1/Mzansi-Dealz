@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useListAdminOrders, updateOrderStatus, getListAdminOrdersQueryKey } from "@workspace/api-client-react";
+import { useListAdminOrders, updateOrderStatus, deleteOrder, getListAdminOrdersQueryKey } from "@workspace/api-client-react";
 import { useAdminHeaders } from "@/hooks/use-admin";
 import { formatPrice } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Trash2 } from "lucide-react";
 
 const STATUSES = ["pending", "awaiting_payment", "paid", "processing", "packed", "shipped", "delivered", "cancelled", "refunded", "failed"];
 
@@ -18,6 +32,8 @@ export default function AdminOrders() {
   const { toast } = useToast();
   
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleteOrderNumber, setDeleteOrderNumber] = useState<string | null>(null);
   
   const { data: ordersData, isLoading } = useListAdminOrders(
     { status: statusFilter === "all" ? undefined : statusFilter as any }, 
@@ -31,6 +47,19 @@ export default function AdminOrders() {
       toast({ title: "Status updated", description: `Order ${orderNumber} marked as ${newStatus}.` });
     } catch (error) {
       toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+    }
+  };
+
+  const handleDelete = async (orderNumber: string) => {
+    try {
+      await deleteOrder(orderNumber, { headers });
+      await queryClient.invalidateQueries({ queryKey: getListAdminOrdersQueryKey() });
+      setDeleteConfirmation("");
+      setDeleteOrderNumber(null);
+      toast({ title: "Order deleted", description: `Order ${orderNumber} was permanently deleted.` });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete order.";
+      toast({ title: "Could not delete order", description: message, variant: "destructive" });
     }
   };
 
@@ -85,6 +114,7 @@ export default function AdminOrders() {
               <TableHead>Items</TableHead>
               <TableHead className="text-right">Total</TableHead>
               <TableHead className="w-[160px]">Status</TableHead>
+              <TableHead className="w-[72px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -101,12 +131,12 @@ export default function AdminOrders() {
               ))
             ) : ordersData?.orders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-12 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-12 text-gray-500">
                   No orders found matching this filter.
                 </TableCell>
               </TableRow>
             ) : (
-              ordersData?.orders.map((order) => (
+                ordersData?.orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium text-gray-900">#{order.id}</TableCell>
                   <TableCell>
@@ -122,7 +152,7 @@ export default function AdminOrders() {
                   <TableCell className="text-right font-medium text-gray-900">
                     {formatPrice(order.total)}
                   </TableCell>
-                  <TableCell>
+                    <TableCell>
                     <Select
                       defaultValue={order.status}
                        onValueChange={(val) => handleStatusChange(order.orderNumber, val)}
@@ -139,6 +169,51 @@ export default function AdminOrders() {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                    <TableCell>
+                      {["pending", "awaiting_payment", "cancelled", "failed", "refunded"].includes(order.status) && (
+                        <AlertDialog
+                          open={deleteOrderNumber === order.orderNumber}
+                          onOpenChange={(open) => {
+                            setDeleteOrderNumber(open ? order.orderNumber : null);
+                            if (!open) setDeleteConfirmation("");
+                          }}
+                        >
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-red-600" title="Delete order">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete order permanently?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This removes the order, its items, and its payment records. This cannot be undone. Type <strong>{order.orderNumber}</strong> to confirm.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <Input
+                              value={deleteConfirmation}
+                              onChange={(event) => setDeleteConfirmation(event.target.value)}
+                              placeholder={`Type ${order.orderNumber}`}
+                              aria-label={`Type ${order.orderNumber} to confirm deletion`}
+                              autoComplete="off"
+                            />
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                disabled={deleteConfirmation !== order.orderNumber}
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  void handleDelete(order.orderNumber);
+                                }}
+                                className="bg-red-600 text-white hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
+                              >
+                                Delete permanently
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </TableCell>
                 </TableRow>
               ))
             )}

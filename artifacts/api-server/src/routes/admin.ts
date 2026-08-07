@@ -7,6 +7,7 @@ import {
   categoriesTable,
   paymentsTable,
   paymentTransactionsTable,
+  refundsTable,
   topSellerSettingsTable,
 } from "@workspace/db";
 import { eq, desc, sql, count, sum } from "drizzle-orm";
@@ -212,6 +213,52 @@ router.put("/admin/orders/:orderNumber/status", requireAdmin, async (req, res) =
   }
 
   res.json({ success: true, status });
+});
+
+// DELETE /admin/orders/:orderNumber
+router.delete("/admin/orders/:orderNumber", requireAdmin, async (req, res) => {
+  const orderNumber = String(req.params.orderNumber);
+  const [order] = await db
+    .select({ id: ordersTable.id, status: ordersTable.status })
+    .from(ordersTable)
+    .where(eq(ordersTable.orderNumber, orderNumber))
+    .limit(1);
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const deletableStatuses = new Set(["pending", "awaiting_payment", "cancelled", "failed", "refunded"]);
+  if (!deletableStatuses.has(order.status)) {
+    res.status(409).json({
+      error: "Only pending, awaiting payment, cancelled, failed, or refunded orders can be deleted.",
+    });
+    return;
+  }
+
+  await db.transaction(async (tx) => {
+    const payments = await tx
+      .select({ id: paymentsTable.id })
+      .from(paymentsTable)
+      .where(eq(paymentsTable.orderId, order.id));
+    const paymentIds = payments.map((payment) => payment.id);
+
+    if (paymentIds.length > 0) {
+      await tx.delete(paymentTransactionsTable).where(
+        sql`${paymentTransactionsTable.paymentId} = ANY(${sql.raw(`ARRAY[${paymentIds.join(",")}]`)})`,
+      );
+      await tx.delete(refundsTable).where(
+        sql`${refundsTable.paymentId} = ANY(${sql.raw(`ARRAY[${paymentIds.join(",")}]`)})`,
+      );
+      await tx.delete(paymentsTable).where(eq(paymentsTable.orderId, order.id));
+    }
+
+    await tx.delete(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+    await tx.delete(ordersTable).where(eq(ordersTable.id, order.id));
+  });
+
+  res.status(204).send();
 });
 
 router.get("/admin/payment-settings", requireAdmin, async (_req, res) => {

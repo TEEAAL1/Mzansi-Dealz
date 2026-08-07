@@ -15,6 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, Plus, Edit2, Trash2 } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +36,14 @@ export default function AdminProducts() {
   const { toast } = useToast();
 
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState("");
   const pageSize = 200;
-  const { data: productsData, isLoading } = useListProducts({ limit: pageSize, offset: page * pageSize });
+  const searchTerm = search.trim();
+  const { data: productsData, isLoading } = useListProducts({
+    limit: pageSize,
+    offset: page * pageSize,
+    search: searchTerm || undefined,
+  });
 
   const handleDelete = async (id: number, name: string) => {
     try {
@@ -66,6 +74,40 @@ export default function AdminProducts() {
             Add Product
           </Button>
         </Link>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative max-w-xl flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(0);
+            }}
+            placeholder="Search by product name, SKU, brand, or keyword..."
+            aria-label="Search products"
+            className="h-11 bg-white pl-9 pr-10"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setPage(0);
+              }}
+              aria-label="Clear product search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {searchTerm && !isLoading && (
+          <p className="text-sm text-gray-500">
+            {productsData?.total ?? 0} matching product{productsData?.total === 1 ? "" : "s"}
+          </p>
+        )}
       </div>
 
       {(productsData?.total ?? 0) > pageSize && (

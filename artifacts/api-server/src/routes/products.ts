@@ -196,6 +196,7 @@ router.get("/products", async (req, res) => {
     const search = `%${params.search}%`;
     conditions.push(sql`(
       ${productsTable.name} ILIKE ${search}
+      OR COALESCE(${productsTable.sku}, '') ILIKE ${search}
       OR COALESCE(${productsTable.tags}, '') ILIKE ${search}
       OR COALESCE(${productsTable.brand}, '') ILIKE ${search}
       OR COALESCE(${productsTable.description}, '') ILIKE ${search}
