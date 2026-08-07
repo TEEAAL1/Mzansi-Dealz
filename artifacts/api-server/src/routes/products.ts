@@ -8,21 +8,10 @@ import {
   GetProductParams,
 } from "@workspace/api-zod";
 import { normalizeCatalogueBrand, sanitizeCatalogueText } from "../services/catalogueBrand";
+import { normalizeProductImageUrl } from "../services/product-image-paths";
 import { getOrCreateTopSellerSettings, normalizeTopSellerSettings, resolveTopSellerRows } from "../services/topSellerService";
 
 const router = Router();
-
-function normalizeImageUrl(value: string): string {
-  try {
-    const parsed = new URL(value);
-    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
-      return `${parsed.pathname}${parsed.search}`;
-    }
-  } catch {
-    // Relative image paths are already suitable for the public app.
-  }
-  return value;
-}
 
 function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: string) {
   const categorySlug = categoryName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -37,7 +26,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     categoryId: p.categoryId,
     categoryName,
     categorySlug,
-    imageUrl: normalizeImageUrl(p.imageUrl),
+    imageUrl: normalizeProductImageUrl(p.imageUrl, p.sku),
     inStock: p.inStock,
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
@@ -53,7 +42,9 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
         (() => {
           try {
             const parsed = JSON.parse(p.galleryImages);
-            return Array.isArray(parsed) ? parsed.map((image) => normalizeImageUrl(image)) : parsed;
+            return Array.isArray(parsed)
+              ? parsed.map((image, index) => normalizeProductImageUrl(image, p.sku, index))
+              : parsed;
           } catch {
             return p.galleryImages;
           }

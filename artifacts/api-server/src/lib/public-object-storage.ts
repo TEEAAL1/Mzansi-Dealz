@@ -26,7 +26,7 @@ function getPublicStorageLocations(): StorageLocation[] {
 async function signObjectUrl(
   location: StorageLocation,
   objectName: string,
-  method: "GET" | "PUT",
+  method: "GET" | "PUT" | "DELETE",
 ): Promise<string> {
   const response = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
     method: "POST",
@@ -43,6 +43,36 @@ async function signObjectUrl(
   const payload = await response.json() as { signed_url?: string };
   if (!payload.signed_url) throw new Error("Object storage did not return a signed URL.");
   return payload.signed_url;
+}
+
+export async function uploadPublicObject(filePath: string, body: Buffer, contentType: string) {
+  if (!filePath || filePath.includes("..") || filePath.startsWith("/")) {
+    throw new Error("Invalid public object path.");
+  }
+  const locations = getPublicStorageLocations();
+  if (!locations.length) throw new Error("Public object storage is not configured.");
+  const location = locations[0];
+  const uploadUrl = await signObjectUrl(location, filePath, "PUT");
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Public object upload failed with HTTP ${response.status}.`);
+  return `/${filePath}`;
+}
+
+export async function deletePublicObject(filePath: string) {
+  if (!filePath || filePath.includes("..") || filePath.startsWith("/")) return;
+  for (const location of getPublicStorageLocations()) {
+    const deleteUrl = await signObjectUrl(location, filePath, "DELETE");
+    const response = await fetch(deleteUrl, {
+      method: "DELETE",
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (response.ok || response.status === 404) return;
+  }
 }
 
 export async function getPublicObjectResponse(filePath: string): Promise<Response | null> {

@@ -6,6 +6,7 @@ import { readFile, unlink } from "node:fs/promises";
 import { logger } from "../lib/logger";
 import { requireAdmin } from "../middlewares/admin-auth";
 import { removeUploadedFileIfOwned } from "../services/upload-files";
+import { uploadPublicObject } from "../lib/public-object-storage";
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
@@ -60,11 +61,17 @@ router.post("/uploads", requireAdmin, (req, res) => {
         return;
       }
 
-      const baseUrl = process.env.REPLIT_DEPLOYMENT_URL
-        ? `https://${process.env.REPLIT_DEPLOYMENT_URL}`
-        : `http://localhost:${process.env.PORT ?? 5000}`;
-
-      urls.push(`${baseUrl}/uploads/${file.filename}`);
+      const extension = path.extname(file.originalname).toLowerCase() || ".jpg";
+      const durablePath = `uploads/products/admin-${randomUUID()}${extension}`;
+      try {
+        urls.push(await uploadPublicObject(durablePath, fileBytes, file.mimetype));
+      } catch (uploadError) {
+        await Promise.all(files.map((candidate) => unlink(candidate.path).catch(() => undefined)));
+        logger.error({ err: uploadError }, "Durable product image upload failed");
+        res.status(502).json({ error: "The image could not be saved to durable storage. Please try again." });
+        return;
+      }
+      await unlink(file.path).catch(() => undefined);
     }
 
     logger.info({ count: urls.length }, "Product images uploaded");

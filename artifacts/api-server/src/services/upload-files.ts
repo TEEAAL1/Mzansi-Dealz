@@ -1,10 +1,11 @@
 import path from "node:path";
 import { unlink } from "node:fs/promises";
+import { deletePublicObject } from "../lib/public-object-storage";
 
 function ownedUploadPath(fileUrl: string) {
   try {
     const pathname = new URL(fileUrl, "http://localhost").pathname;
-    if (!pathname.startsWith("/uploads/")) return null;
+    if (!pathname.startsWith("/uploads/") || pathname.startsWith("/uploads/products/")) return null;
     return path.join("uploads", path.basename(pathname));
   } catch {
     return null;
@@ -12,6 +13,15 @@ function ownedUploadPath(fileUrl: string) {
 }
 
 export async function removeUploadedFileIfOwned(fileUrl: string) {
+  try {
+    const pathname = new URL(fileUrl, "http://localhost").pathname;
+    if (pathname.startsWith("/uploads/products/admin-")) {
+      await deletePublicObject(pathname.slice(1));
+      return;
+    }
+  } catch {
+    // Fall through to local-file cleanup for legacy URLs.
+  }
   const filePath = ownedUploadPath(fileUrl);
   if (filePath) await unlink(filePath).catch(() => undefined);
 }

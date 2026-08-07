@@ -36,6 +36,7 @@ import {
   type TopSellerMode,
 } from "../services/topSellerService";
 import { removeUploadedFileIfOwned, parseGalleryImages } from "../services/upload-files";
+import { normalizeProductImageUrl } from "../services/product-image-paths";
 
 const router = Router();
 
@@ -391,8 +392,8 @@ const CreateProductSchema = z.object({
   price: z.number().positive(),
   originalPrice: z.number().positive(),
   categoryId: z.number().int().positive(),
-  imageUrl: z.string().url(),
-  galleryImages: z.array(z.string().url()).max(12).optional(),
+  imageUrl: z.string().refine((value) => /^https?:\/\//i.test(value) || /^\/uploads\//.test(value), "Image URL must be an absolute URL or an uploads path."),
+  galleryImages: z.array(z.string().refine((value) => /^https?:\/\//i.test(value) || /^\/uploads\//.test(value), "Gallery image must be an absolute URL or an uploads path.")).max(12).optional(),
   inStock: z.boolean().optional().default(true),
   stockCount: z.number().int().optional(),
   isFeatured: z.boolean().optional().default(false),
@@ -435,7 +436,7 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     discountPercent: p.discountPercent,
     categoryId: p.categoryId,
     categoryName,
-    imageUrl: p.imageUrl,
+    imageUrl: normalizeProductImageUrl(p.imageUrl, p.sku),
     inStock: p.inStock,
     stockCount: p.stockCount,
     isFeatured: p.isFeatured,
@@ -445,7 +446,9 @@ function toProductResponse(p: typeof productsTable.$inferSelect, categoryName: s
     brand: normalizeCatalogueBrand(p.brand),
     specifications: sanitizeCatalogueText(p.specifications),
     features: sanitizeCatalogueText(p.features),
-    galleryImages: p.galleryImages,
+    galleryImages: p.galleryImages
+      ? JSON.stringify(parseGalleryImages(p.galleryImages).map((image, index) => normalizeProductImageUrl(image, p.sku, index)))
+      : null,
     stockStatus: p.stockStatus,
     weight: p.weight,
     dimensions: p.dimensions,
