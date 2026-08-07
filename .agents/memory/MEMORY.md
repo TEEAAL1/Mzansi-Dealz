@@ -3,3 +3,4 @@
 - [Custom domain deployment split](custom-domain-deployment.md) — mzansidealz.com is served by Vercel separately from the Replit deployment; sync GitHub and publish Replit for full updates.
 - [Product import source limits](product-import-source-limits.md) — external Shopify sources may throttle JSON/page crawling; preserve accepted rows and allow safe finalization instead of restarting from zero.
 - [Honest storefront merchandising](honest-storefront-merchandising.md) — use real order-derived best sellers and clearly labeled feedback invitations until review data is actually connected.
+- [Object-storage stream resilience](object-storage-stream-resilience.md) — public image streams must handle client aborts so timed-out image requests cannot crash the API.
